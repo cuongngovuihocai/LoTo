@@ -97,7 +97,7 @@ function confirmTickets() {
     playerRef.set({
         name: playerName,
         tickets: myTickets,
-        maxTickets: myMaxTickets // Lưu hạn mức hiện tại
+        maxTickets: myMaxTickets, // Lưu hạn mức hiện tại
 	status: 'READY'
     });
 
@@ -413,4 +413,5 @@ function showToast(msg, duration = 3000) {
 function getUrlParam(name) {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
+
 }
