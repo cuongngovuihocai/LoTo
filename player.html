@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lô Tô Đại Cát - Người Chơi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Ép toàn bộ ứng dụng luôn nằm trong 1 màn hình, không có thanh cuộn trình duyệt */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; 
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            background-color: #5c0000;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-amber-100">
+
+<!-- 1. MÀN HÌNH ĐĂNG NHẬP -->
+<div id="screen-join" class="flex-1 flex flex-col items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm border-b-8 border-red-600">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-sigmar text-red-600 drop-shadow-sm uppercase leading-tight">Lô Tô</h1>
+            <p class="text-red-800 font-goldman tracking-widest text-sm uppercase">Đại Cát Đại Lợi</p>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="text-[12px] font-black text-red-900 uppercase ml-1">Tên của bạn</label>
+                <input type="text" id="input-name" placeholder="Ví dụ: Anh Ba Khía" class="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-900 font-bold outline-none">
+            </div>
+            <div>
+                <label class="text-[12px] font-black text-red-900 uppercase ml-1">Mã phòng</label>
+                <input type="number" id="input-room" placeholder="6 chữ số" class="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-900 font-bold outline-none">
+            </div>
+            <button onclick="handleJoinRoom()" class="w-full bg-red-600 text-white font-sigmar text-xl py-4 rounded-2xl shadow-lg transform active:scale-95 transition-all">VÀO PHÒNG</button>
+        </div>
+    </div>
+    <div class="mt-8 flex flex-col items-center gap-2">             
+        <div class="text-yellow-400 font-bold text-sm uppercase tracking-widest font-goldman">Xuân Bính Ngọ 2026</div>
+	<img src="assets/logo.png" alt="Logo" class="h-14 md:h-24 w-auto drop-shadow-lg mt-2">
+    </div>
+</div>
+
+<!-- 2. MÀN HÌNH CHỌN VÉ -->
+<div id="screen-selection" class="hidden h-full flex flex-col overflow-hidden relative">
+    
+    <!-- LỚP PHỦ CHỜ NHÀ CÁI (Che toàn bộ để khóa nút bấm) -->
+    <div id="selection-waiting-overlay" class="absolute inset-0 z-50 bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center text-center p-6">
+        <!-- Hiệu ứng lì xì nhảy múa -->
+        <div class="text-8xl mb-6 animate-bounce">🧧</div>
+        <h3 class="text-3xl font-sigmar text-yellow-400 drop-shadow-lg">XIN CHỜ GIÂY LÁT</h3>
+        <div class="w-16 h-1 bg-yellow-500 my-4 rounded-full"></div>
+        <p class="text-yellow-100 text-lg font-medium italic">
+            Nhà cái đang chuẩn bị vé cho bạn...
+        </p>
+        <p class="text-yellow-600 text-xs mt-4 uppercase tracking-widest animate-pulse">
+            Vui lòng không tải lại trang
+        </p>
+    </div>
+
+    <!-- Header chọn vé (Nằm dưới lớp phủ nên sẽ bị khóa) -->
+    <div class="shrink-0 bg-red-800 border-b-4 border-yellow-500 p-6 shadow-2xl flex flex-col items-center gap-4">
+        <h2 class="text-2xl font-sigmar text-yellow-400 uppercase">Chọn vé may mắn</h2>
+        <div class="flex gap-4">
+            <button onclick="renderNewSheet()" class="bg-red-900 border border-yellow-600 text-yellow-400 px-6 py-2 rounded-xl font-bold">🔄 ĐỔI BỘ</button>
+            <button onclick="confirmTickets()" class="bg-yellow-500 text-red-950 font-black px-8 py-2 rounded-xl shadow-md uppercase">Chơi ngay</button>
+        </div>
+        <p class="text-[12px] font-bold text-yellow-200 uppercase tracking-widest">Hạn mức: <span id="max-ticket-display" class="text-white text-lg mx-1">0</span> vé</p>
+    </div>
+
+    <!-- Vùng chứa vé -->
+    <div id="sheet-container" class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start no-scrollbar">
+        <!-- JS Render -->
+    </div>
+
+    <!-- Logo Footer -->
+    <div class="shrink-0 p-4 flex flex-col items-center bg-black/20">
+	<img src="assets/logo.png" alt="Logo" class="h-10 md:h-20 w-auto drop-shadow-lg">
+    </div>
+</div>
+
+    <!-- 3. MÀN HÌNH CHƠI GAME (ĐÃ ÉP KHUNG 1 MÀN HÌNH) -->
+    <div id="screen-game" class="hidden h-full flex flex-col overflow-hidden">
+        
+        <!-- Header Game: Logo to & Số nhỏ -->
+        <header class="shrink-0 bg-red-800 border-b-4 border-yellow-500 p-3 shadow-2xl">
+            <div class="max-w-6xl mx-auto flex items-center justify-between px-2">
+                <!-- Logo to bên trái -->
+                <div class="flex-1">
+                    <img src="assets/logo.png" alt="Logo" class="h-10 md:h-20 w-auto drop-shadow-lg">
+                </div>
+
+                <!-- Số hiện tại thu nhỏ bên phải -->
+                <div class="flex flex-col items-center bg-red-900/60 py-1 px-4 rounded-xl border-2 border-yellow-600 shadow-inner">
+                    <span class="text-[12px] font-black text-yellow-500 uppercase tracking-tighter">Số hiện tại</span>
+                    <div id="display-current-num" class="text-4xl md:text-5xl font-sigmar text-white leading-none">--</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Thanh gạt chế độ (Góc phải, nằm riêng 1 dòng nhỏ) -->
+        <div class="shrink-0 px-4 py-2 flex justify-end items-center gap-2">
+            <span id="mode-label" class="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Dò Thủ Công</span>
+            <label class="relative inline-flex items-center cursor-pointer scale-90">
+                <input type="checkbox" id="auto-toggle" class="sr-only peer" onchange="toggleAutoMode()">
+                <div class="w-11 h-6 bg-red-950 border border-yellow-900/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+            </label>
+        </div>
+
+        <!-- VÙNG VÉ DÒ: TỰ CO GIÃN VÀ CUỘN BÊN TRONG -->
+<!-- Thay đổi class lg:grid-cols-2 thành md:grid-cols-2 -->
+<!-- md là dành cho máy tính bảng (768px trở lên) -->
+<main id="my-game-tickets" class="flex-1 overflow-y-auto px-4 py-1 grid grid-cols-1 md:grid-cols-2 gap-4 no-scrollbar min-h-0">
+    <!-- Render bởi JS -->
+</main>
+        <!-- FOOTER: NÚT KINH CỐ ĐỊNH, KHÔNG ĐÈ VÉ -->
+        <footer class="shrink-0 p-4 bg-gradient-to-t from-red-950 to-transparent flex justify-center">
+            <button onclick="callKinh()" 
+                class="w-full max-w-md bg-gradient-to-r from-red-600 to-red-800 text-white font-sigmar text-3xl py-4 rounded-2xl shadow-2xl border-4 border-yellow-400 active:scale-95 transition-all uppercase tracking-widest">
+                KINH !!!
+            </button>
+        </footer>
+    </div>
+
+    <!-- CÁC THÀNH PHẦN NỔI (MODALS & TOAST) -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden bg-yellow-500 text-red-950 px-6 py-3 rounded-full font-black shadow-2xl border-2 border-yellow-200 animate-bounce"></div>
+
+    <div id="announcement-modal" class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center hidden p-6 backdrop-blur-md">
+        <div class="bg-white border-4 border-red-600 p-8 rounded-[2rem] text-center max-w-sm w-full shadow-2xl">
+            <div id="announce-icon" class="text-6xl mb-4 animate-bounce">🔔</div>
+            <h2 id="announce-title" class="text-2xl font-sigmar text-red-600 mb-2 italic uppercase">ĐANG HÔ KINH!</h2>
+            <p id="announce-msg" class="text-slate-700 font-bold mb-6">Đang kiểm tra số...</p>
+            <button id="btn-close-announce" onclick="closeAnnounce()" class="hidden w-full bg-red-600 text-white font-bold py-3 rounded-xl uppercase">Đóng</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/loto-logic.js"></script>
+    <script src="js/player.js"></script>
+</body>
+</html>

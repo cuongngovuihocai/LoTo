@@ -1,0 +1,239 @@
+/* --- PHÔNG CHỮ & NỀN TỔNG THỂ --- */
+@import url('https://fonts.googleapis.com/css2?family=Goldman&family=Sigmar+One&display=swap');
+
+:root {
+    --do-do: #5c0000;
+    --do-tuoi: #dc2626;
+    --vang-gold: #facc15;
+    --vang-dam: #a16207;
+    --trang-nga: #fef3c7;
+}
+
+body {
+    background-color: var(--do-do);
+    background-image: radial-gradient(#800000 1px, transparent 0);
+    background-size: 40px 40px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--trang-nga);
+}
+
+.font-sigmar { font-family: 'Sigmar One', cursive; }
+.font-goldman { font-family: 'Goldman', display; }
+
+/* --- HIỆU ỨNG LUNG LINH & HÀO QUANG --- */
+@keyframes gold-glow {
+    from { box-shadow: 0 0 15px var(--vang-gold); }
+    to { box-shadow: 0 0 40px #fbbf24, 0 0 10px #ffffff; }
+}
+
+.is-verified-winner {
+    animation: gold-glow 0.8s infinite alternate;
+    border: 4px solid var(--vang-gold) !important;
+}
+
+/* --- HIỆU ỨNG CHO CÁC Ô SỐ --- */
+.number-cell {
+    background: #450a0a;
+    border: 2px solid var(--vang-dam);
+    color: var(--vang-gold);
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border-radius: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.number-cell.active {
+    background: linear-gradient(135deg, var(--vang-gold), #fbbf24, var(--vang-dam));
+    color: #450a0a;
+    border-color: #ffffff;
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.8);
+    transform: scale(1.15) rotate(2deg);
+    z-index: 10;
+}
+
+/* --- HIỆU ỨNG LỒNG CẦU & BÓNG --- */
+/* Lồng cầu đứng yên, không xoay container nữa */
+#cage-container {
+    background: radial-gradient(circle at 30% 30%, #450a0a, #000);
+    border: 6px solid #facc15;
+}
+
+/* Hiệu ứng bóng nhảy độc lập (Popcorn) */
+@keyframes ball-chaos {
+    0% { transform: translate(0, 0) scale(1); }
+    20% { transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px)) scale(1.1); }
+    40% { transform: translate(calc(var(--x2) * 1px), calc(var(--y2) * 1px)) scale(0.9); }
+    60% { transform: translate(calc(var(--x3) * 1px), calc(var(--y3) * 1px)) scale(1.1); }
+    80% { transform: translate(calc(var(--x4) * 1px), calc(var(--y4) * 1px)) scale(0.9); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+.animate-popcorn {
+    animation: ball-chaos 0.4s infinite linear !important;
+}
+
+/* Thu nhỏ ô số cho Host */
+#loto-board .number-cell {
+    font-size: 0.85rem;
+    border-width: 1px;
+    border-radius: 0.4rem;
+}
+
+/* Responsive tinh chỉnh */
+@media (max-height: 800px) {
+    #loto-board .number-cell { font-size: 0.75rem; }
+    .font-sigmar { font-size: 0.9em; }
+}
+@keyframes pop-out {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* --- HIỆU ỨNG NHẮC SỐ (DÒ SÓT) --- */
+.missed-pulse {
+    animation: missed 1.5s infinite;
+    border: 2px solid var(--vang-gold) !important;
+}
+@keyframes missed {
+    0%, 100% { background-color: rgba(250, 204, 21, 0.2); transform: scale(1); }
+    50% { background-color: rgba(250, 204, 21, 0.6); transform: scale(1.05); }
+}
+
+/* --- TÙY CHỈNH NÚT BẤM --- */
+button {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+button:active { transform: scale(0.95); }
+button:disabled { cursor: not-allowed; filter: grayscale(1); }
+
+/* --- THANH CUỘN TẾT --- */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--do-do); }
+::-webkit-scrollbar-thumb {
+    background: var(--vang-dam);
+    border-radius: 10px;
+    border: 2px solid var(--do-do);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--vang-gold); }
+
+/* --- TIỆN ÍCH --- */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Thu nhỏ ô số riêng cho bảng của Host để fit màn hình */
+#loto-board .number-cell {
+    font-size: 1rem; /* Giảm cỡ chữ số */
+    border-width: 1px; /* Viền mỏng hơn cho ô nhỏ */
+    border-radius: 0.5rem;
+}
+
+/* Làm đẹp màn hình chọn vé */
+#screen-selection h2 {
+    color: var(--vang-gold);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Biến mỗi vé mini thành một bao lì xì nhỏ */
+.mini-ticket-box {
+    background: #fdfdfd;
+    border: 3px solid #450a0a; /* Viền đỏ đậm bao quanh */
+    border-radius: 1rem;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 100%; /* Đảm bảo vé lấp đầy cột của Grid */
+    max-width: 360px; /* Khống chế chiều ngang tối đa */
+    margin: 0 auto; /* Căn giữa trong cột */
+    position: relative;
+    overflow: hidden;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2); /* Đổ bóng kiểu retro */
+    /* ĐẢM BẢO CHIỀU CAO TỰ NHIÊN */
+    height: auto; 
+    display: flex;
+    flex-direction: column;
+}
+
+/* Loại bỏ các padding thừa ở container chứa bảng */
+.mini-ticket-box > div:last-child {
+    padding: 10px; /* Thu nhỏ khoảng cách giữa viền vé và bảng số */
+    background-color: #f8fafc; /* Một chút màu nền nhạt cho vùng chứa bảng */
+}
+
+/* Hiệu ứng khi di chuột qua vé */
+.mini-ticket-box:hover {
+    transform: translateY(-5px);
+    border-color: var(--vang-gold);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+}
+
+/* Hiệu ứng khi vé được chọn trong danh sách */
+.mini-ticket-box.selected {
+    border-color: var(--vang-gold);
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--vang-gold);
+    z-index: 10;
+}
+/* Chữ trong vé mini */
+.mini-ticket-box .cell-num {
+    color: #450a0a;
+    font-weight: 800;
+}
+
+/* Đè màu chữ khi vé được chọn */
+.mini-ticket-box.selected .cell-num {
+    color: #5c0000;
+}
+
+/* Đảm bảo các hàng cuối cùng không bị mất viền hoặc thừa viền */
+#my-game-tickets .grid-cols-9:last-child {
+    border-bottom: none;
+}
+
+#my-game-tickets .grid-cols-9 .flex:last-child {
+    border-right: none;
+}
+
+/* Thu nhỏ Modal thông báo cho máy khách để không che hết vé */
+#announcement-modal .bg-white {
+    max-width: 300px;
+    padding: 1.5rem;
+}
+
+/* Điều chỉnh lại nút KINH cho nhỏ gọn hơn trên màn hình chia cột */
+#screen-game button[onclick="callKinh()"] {
+    max-width: 300px;
+    font-size: 1.5rem;
+    padding: 1rem;
+}
+
+/* Đảm bảo chữ trong ô nhập liệu luôn rõ nét */
+input#input-name, 
+input#input-room {
+    color: #0f172a !important; /* Màu xanh đen Slate-900 */
+    font-family: sans-serif; /* Font hệ thống cho dễ đọc */
+}
+
+/* Đổi màu chữ khi người dùng đang gõ */
+input:focus {
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+
+/* Đổi màu chữ placeholder (chữ gợi ý) */
+::placeholder {
+    color: #94a3b8 !important; /* Màu xám nhạt */
+    font-weight: normal;
+}
+
+/* Tăng độ đậm cho số trên vé để nổi bật trên nền màu */
+.text-slate-900 {
+    color: #000000 !important;
+    text-shadow: 0.5px 0.5px 0px rgba(255,255,255,0.5);
+}
+
+
+/* Sửa đường kẻ ô số cho nét */
+.mini-ticket-box .grid-cols-9 > div {
+    box-sizing: border-box;
+}
