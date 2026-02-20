@@ -105,16 +105,22 @@ function renderPlayerList(players) {
                 </span>
             </div>
             
-            <div class="flex items-center gap-1 bg-black/40 p-1 rounded-lg">
-                <!-- Chống hạ xuống dưới 0 -->
+            <div class="flex items-center gap-1 bg-black/40 p-1 rounded-lg ml-2">
+                <!-- Nút Giảm Vé (-) -->
                 <button onclick="changeMaxTickets('${id}', ${Math.max(0, maxV - 1)})" 
                     class="bg-red-700 hover:bg-red-600 text-white w-6 h-6 rounded border border-red-500 flex items-center justify-center font-bold transition-colors">-</button>
                 
                 <span class="text-xs font-bold w-5 text-center text-white">${maxV}</span>
                 
-                <!-- Giới hạn tối đa 6 vé cho an toàn hệ thống -->
+                <!-- Nút Tăng Vé (+) -->
                 <button onclick="changeMaxTickets('${id}', ${Math.min(6, maxV + 1)})" 
                     class="bg-green-700 hover:bg-green-600 text-white w-6 h-6 rounded border border-green-500 flex items-center justify-center font-bold transition-colors">+</button>
+
+                <!-- [MỚI] Nút Đá Người Chơi (x) -->
+                <button onclick="kickPlayer('${id}')" 
+                    class="ml-1 bg-slate-700 hover:bg-slate-600 text-white w-6 h-6 rounded border border-slate-500 flex items-center justify-center font-bold transition-colors" title="Đuổi khỏi phòng">
+                    ✕
+                </button>
             </div>
         `;
         listContainer.appendChild(item);
@@ -341,20 +347,20 @@ function handleWinnerFound(winner) {
 
     // 2. LẤY DỮ LIỆU ĐỐI SOÁT
     const serverHistory = drawnHistory; // Mảng các số đã xổ theo thứ tự
-    const winningRow = winner.winningRow; // 5 số người chơi gửi lên
+    const winningRow = winner.winningRow || []; // 5 số người chơi gửi lên
     const winnerModal = document.getElementById('winner-modal');
     const winnerNameEl = document.getElementById('winner-name');
 
     // 3. KIỂM TRA TÍNH HỢP LỆ (BẰNG CHỨNG CÓ THẬT KHÔNG?)
-    const isLegit = winningRow.every(num => serverHistory.includes(num));
+    const isLegit = winningRow.every(num => serverHistory.includes(Number(num)));
 
     if (!isLegit) {
         // TRƯỜNG HỢP 1: KINH LÁO (Có số chưa xổ mà dám báo)
-        renderWinnerModal(winnerNameEl, "KINH SAI!", `Người chơi ${winner.name} báo số chưa xổ: ${winningRow.join(', ')}`, "text-red-500");
+        renderWinnerModal(winnerNameEl, winner, "KINH SAI!", `Người chơi ${winner.name} báo số chưa xổ: ${winningRow.join(', ')}`, "text-red-500");
     } else {
         // 4. KIỂM TRA KINH TRỄ (QUAN TRỌNG)
         // Tìm vị trí của số cuối cùng trong bộ 5 số trúng nằm ở đâu trong lịch sử
-        const indices = winningRow.map(num => serverHistory.indexOf(num));
+        const indices = winningRow.map(num => serverHistory.indexOf(Number(num)));
         const lastNumIndex = Math.max(...indices); // Vị trí của con số "vừa đủ"
         const currentServerIndex = serverHistory.length - 1; // Vị trí của con số vừa xổ xong trên màn hình
 
@@ -363,7 +369,7 @@ function handleWinnerFound(winner) {
             const missedNum = serverHistory[lastNumIndex];
             const lateCount = currentServerIndex - lastNumIndex;
             
-            renderWinnerModal(winnerNameEl, "KINH TRỄ!", 
+            renderWinnerModal(winnerNameEl, winner, "KINH TRỄ!", 
                 `${winner.name} đã đủ hàng từ số [${missedNum}], nhưng đã để qua thêm ${lateCount} số mới báo. Rất tiếc!`, 
                 "text-orange-500");
             
@@ -371,7 +377,7 @@ function handleWinnerFound(winner) {
             document.querySelector('#winner-modal button').innerText = "BỎ QUA & CHƠI TIẾP";
         } else {
             // TRƯỜNG HỢP 3: THẮNG HỢP LỆ (Kinh ngay khi số vừa ra)
-            renderWinnerModal(winnerNameEl, "THẮNG CUỘC!", 
+            renderWinnerModal(winnerNameEl, winner, "THẮNG CUỘC!", 
                 `${winner.name} đã Kinh hợp lệ!<br>Bộ số: ${winningRow.join(' - ')}`, 
                 "text-green-500");
             
@@ -383,7 +389,7 @@ function handleWinnerFound(winner) {
 }
 
 // Hàm phụ để vẽ nội dung Modal cho gọn code
-function renderWinnerModal(el, title, desc, colorClass) {
+function renderWinnerModal(el, winner, title, desc, colorClass) {
     el.innerHTML = `
         <div class="text-4xl font-sigmar ${colorClass} mb-2">${title}</div>
         <div class="text-white text-2xl font-bold uppercase mb-2">${winner.name}</div>
@@ -433,4 +439,47 @@ function showToast(msg) {
         toast.classList.remove('hidden');
         setTimeout(() => toast.classList.add('hidden'), 3000);
     }
+}
+
+// Chức năng Đá người chơi
+function kickPlayer(pId) {
+    if(confirm("Bạn muốn mời người chơi này ra khỏi phòng?")) {
+        db.ref(`rooms/${roomId}/players/${pId}`).remove();
+    }
+}
+
+// Chức năng Hủy ván / Reset ván (khi đang chơi dở)
+function forceResetGame() {
+    if(!confirm("Hủy ván hiện tại và reset lại từ đầu?")) return;
+
+    // Dừng quay số
+    isGameRunning = false;
+    isSpinning = false;
+    if (autoDrawInterval) clearInterval(autoDrawInterval);
+    document.getElementById('auto-draw-toggle').checked = false;
+
+    // Reset dữ liệu trên Firebase
+    db.ref(`rooms/${roomId}`).update({
+        status: 'WAITING',
+        current_number: 0,
+        history: [],
+        winner: null
+    });
+
+    // Reset giao diện Host
+    drawnHistory = [];
+    allNumbersPool = [];
+    document.getElementById('loto-board').innerHTML = '';
+    initBoardUI(); // Vẽ lại bảng trắng
+    
+    document.getElementById('current-num').classList.add('hidden');
+    document.getElementById('btn-draw').disabled = true;
+    
+    // Mở lại nút Bắt đầu
+    const btnStart = document.getElementById('btn-start');
+    btnStart.innerText = "BẮT ĐẦU VÁN MỚI";
+    btnStart.disabled = false;
+    btnStart.style.backgroundColor = "#16a34a";
+
+    showToast("Đã hủy ván đấu. Sẵn sàng chơi lại!");
 }
