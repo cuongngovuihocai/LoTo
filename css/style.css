@@ -121,8 +121,6 @@ button:disabled { cursor: not-allowed; filter: grayscale(1); }
 ::-webkit-scrollbar-thumb:hover { background: var(--vang-gold); }
 
 /* --- TIỆN ÍCH --- */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-
 /* Thu nhỏ ô số riêng cho bảng của Host để fit màn hình */
 #loto-board .number-cell {
     font-size: 1rem; /* Giảm cỡ chữ số */
@@ -236,4 +234,21 @@ input:focus {
 /* Sửa đường kẻ ô số cho nét */
 .mini-ticket-box .grid-cols-9 > div {
     box-sizing: border-box;
+}
+
+/* Đảm bảo bảng số luôn cân đối khi cuộn */
+#loto-board {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 4px;
+    padding-bottom: 20px; /* Tạo khoảng trống phía dưới để không bị sát viền */
+}
+
+/* Ẩn thanh cuộn xấu xí nhưng vẫn cho phép cuộn */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
