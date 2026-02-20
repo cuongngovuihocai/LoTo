@@ -1,5 +1,5 @@
 /**
- * HOST.JS - LÔ TÔ TẾT ĐẠI CÁT (FIXED)
+ * HOST.JS - LÔ TÔ TẾT ĐẠI CÁT 
  */
 
 let roomId = null;
@@ -379,10 +379,14 @@ window.speechSynthesis.onvoiceschanged = () => {
     window.speechSynthesis.getVoices();
 };
 
+/**
+ * Xử lý khi có người báo Kinh (Hệ thống VAR)
+ * Cập nhật: Sử dụng lastNumIndex từ logic để xác định thắng/trễ chính xác.
+ */
 function handleWinnerFound(winner) {
     if (!winner) return;
 
-    // 1. Tạm dừng quay số để trọng tài làm việc
+    // 1. Tạm dừng quay số để làm việc
     isGameRunning = false;
     document.getElementById('btn-draw').disabled = true;
     if (autoDrawInterval) {
@@ -390,43 +394,42 @@ function handleWinnerFound(winner) {
         document.getElementById('auto-draw-toggle').checked = false;
     }
 
-    // 2. LẤY DỮ LIỆU ĐỐI SOÁT
-    const serverHistory = drawnHistory; // Mảng các số đã xổ theo thứ tự
-    const winningRow = winner.winningRow || []; // 5 số người chơi gửi lên
+    // 2. Lấy dữ liệu
+    const serverHistory = drawnHistory; // Lịch sử số tại máy Host
+    const winningRow = winner.winningRow || [];
     const winnerModal = document.getElementById('winner-modal');
     const winnerNameEl = document.getElementById('winner-name');
 
-    // 3. KIỂM TRA TÍNH HỢP LỆ (BẰNG CHỨNG CÓ THẬT KHÔNG?)
+    // 3. Kiểm tra tính hợp lệ của bộ số (có số nào chưa xổ không)
     const isLegit = winningRow.every(num => serverHistory.includes(Number(num)));
 
     if (!isLegit) {
-        // TRƯỜNG HỢP 1: KINH LÁO (Có số chưa xổ mà dám báo)
-        renderWinnerModal(winnerNameEl, winner, "KINH SAI!", `Người chơi ${winner.name} báo số chưa xổ: ${winningRow.join(', ')}`, "text-red-500");
+        // Trường hợp báo số chưa xổ
+        renderWinnerModal(winnerNameEl, winner, "KINH SAI!", 
+            `Người chơi ${winner.name} báo hàng số có số chưa xổ!`, "text-red-500");
     } else {
-        // 4. KIỂM TRA KINH TRỄ (QUAN TRỌNG)
-        // Tìm vị trí của số cuối cùng trong bộ 5 số trúng nằm ở đâu trong lịch sử
-        const indices = winningRow.map(num => serverHistory.indexOf(Number(num)));
-        const lastNumIndex = Math.max(...indices); // Vị trí của con số "vừa đủ"
-        const currentServerIndex = serverHistory.length - 1; // Vị trí của con số vừa xổ xong trên màn hình
+        // 4. KIỂM TRA KINH TRỄ DỰA TRÊN HÀNG TỐT NHẤT
+        // lastNumIndex là vị trí của con số "hoàn tất" hàng trúng trong lịch sử
+        const lastNumIndex = winner.lastNumIndex; 
+        const currentServerIndex = serverHistory.length - 1;
 
-        if (lastNumIndex < currentServerIndex - 1) { // Cho phép trễ 1 số
-            // TRƯỜNG HỢP 2: KINH TRỄ (Số đủ từ đời nào rồi giờ mới báo)
+        // Nếu số hoàn tất là số vừa ra (hoặc trễ tối đa 1 số)
+        if (lastNumIndex >= currentServerIndex - 1) {
+            renderWinnerModal(winnerNameEl, winner, "THẮNG CUỘC!", 
+                `${winner.name} đã Kinh hợp lệ!<br>Bộ số: ${winningRow.join(' - ')}. Xin chúc mừng.`, 
+                "text-green-500");
+            
+            document.querySelector('#winner-modal button').innerText = "XÁC NHẬN KẾT THÚC";
+        } else {
+            // Trường hợp người chơi cố tình chọn hàng đã trúng từ lâu
             const missedNum = serverHistory[lastNumIndex];
             const lateCount = currentServerIndex - lastNumIndex;
             
             renderWinnerModal(winnerNameEl, winner, "KINH TRỄ!", 
-                `${winner.name} đã đủ hàng từ số [${missedNum}], nhưng đã để qua thêm ${lateCount} số mới báo. Rất tiếc!`, 
+                `${winner.name} đã đủ từ số [${missedNum}], nhưng đã để trễ ${lateCount} số mới báo. Rất tiếc phải từ chối.`, 
                 "text-orange-500");
             
-            // Đổi tên nút xác nhận thành "Bỏ qua & Chơi tiếp"
             document.querySelector('#winner-modal button').innerText = "BỎ QUA & CHƠI TIẾP";
-        } else {
-            // TRƯỜNG HỢP 3: THẮNG HỢP LỆ (Kinh ngay khi số vừa ra)
-            renderWinnerModal(winnerNameEl, winner, "THẮNG CUỘC!", 
-                `${winner.name} đã Kinh hợp lệ!<br>Bộ số: ${winningRow.join(' - ')}`, 
-                "text-green-500");
-            
-            document.querySelector('#winner-modal button').innerText = "XÁC NHẬN KẾT THÚC";
         }
     }
 

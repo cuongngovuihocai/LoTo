@@ -245,12 +245,12 @@ function generateLotoSheet() {
 
 /**
  * Kiểm tra xem người chơi có trúng (Kinh) hay không.
- * @param {Array} tickets - Mảng chứa các vé người chơi đã chọn (1 đến 6 vé)
- * @param {Array} drawnNumbers - Mảng chứa các số Nhà cái đã xổ (VD: [12, 45, 88, 7...])
- * @returns {Object} - Trả về kết quả trúng hay trượt, và trúng ở vé nào, hàng nào.
+ * PHIÊN BẢN CẢI TIẾN: Duyệt toàn bộ các vé để tìm hàng có số vừa mới xổ nhất (tránh lỗi Kinh Trễ oan).
  */
 function checkWin(tickets, drawnNumbers) {
     const drawnSet = new Set(drawnNumbers);
+    let bestWin = null;
+    let maxLastNumIndex = -1;
 
     for (let t = 0; t < tickets.length; t++) {
         const ticket = tickets[t];
@@ -258,29 +258,43 @@ function checkWin(tickets, drawnNumbers) {
         for (let r = 0; r < 3; r++) {
             const row = ticket[r];
             let matchCount = 0;
-            let rowNumbers = []; // Mảng chứa 5 số thực tế của hàng này
+            let rowNumbers = [];
+            let lastIndexInHistoryForThisRow = -1;
 
             for (let c = 0; c < 9; c++) {
                 const num = row[c];
                 if (num !== 0) {
-                    rowNumbers.push(num); // Thu thập đủ 5 số của hàng
+                    rowNumbers.push(num);
                     if (drawnSet.has(num)) {
                         matchCount++;
+                        // Tìm vị trí của con số này trong lịch sử đã xổ
+                        const idx = drawnNumbers.indexOf(num);
+                        if (idx > lastIndexInHistoryForThisRow) {
+                            lastIndexInHistoryForThisRow = idx;
+                        }
                     }
                 }
             }
 
-            // Nếu khớp đủ 5 số đã xổ
+            // Nếu hàng này đủ 5 số
             if (matchCount === 5) {
-                return {
-                    isWin: true,
-                    winningRow: rowNumbers, // Trả về 5 số này để Host đối soát
-                    ticketIndex: t + 1,    // Trả về số thứ tự vé (1-6) cho dễ đọc
-                    rowIndex: r + 1        // Trả về số thứ tự hàng (1-3) cho dễ đọc
-                };
+                // LOGIC QUAN TRỌNG: 
+                // Nếu đây là hàng trúng đầu tiên tìm thấy, hoặc hàng này có con số hoàn tất "mới hơn" hàng trước đó
+                if (lastIndexInHistoryForThisRow > maxLastNumIndex) {
+                    maxLastNumIndex = lastIndexInHistoryForThisRow;
+                    bestWin = {
+                        isWin: true,
+                        winningRow: rowNumbers,
+                        ticketIndex: t + 1,
+                        rowIndex: r + 1,
+                        // Lưu lại vị trí của con số làm hàng này trúng để Host đối soát
+                        lastNumIndex: lastIndexInHistoryForThisRow 
+                    };
+                }
             }
         }
     }
 
-    return { isWin: false };
+    // Trả về hàng trúng "tốt nhất" (mới nhất) hoặc báo không trúng
+    return bestWin || { isWin: false };
 }
