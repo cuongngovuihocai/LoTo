@@ -79,8 +79,8 @@
                     </label>
                 </div>
             </div>	
-            <!-- Lồng cầu (Fix quả bóng riêng lẻ trong JS) -->
-            <div id="cage-container" class="relative w-32 h-32 rounded-full border-4 border-yellow-500 bg-red-950 overflow-hidden shadow-inner">
+            <!-- Lồng cầu: ẨN TRÊN MOBILE (hidden), CHỈ HIỆN TRÊN MÁY TÍNH (lg:flex) -->
+            <div id="cage-container" class="hidden lg:flex relative w-32 h-32 rounded-full border-4 border-yellow-500 bg-red-950 overflow-hidden shadow-inner items-center justify-center">
                 <div id="cage-balls" class="absolute inset-0"></div>
             </div>
 
@@ -100,38 +100,37 @@
          </div>
     </div>
 
-<!-- CỘT 2: BẢNG SỐ HỆ THỐNG (ĐÃ LÀM ĐẬM TIÊU ĐỀ) -->
-<div class="lg:col-span-6 flex flex-col min-h-0">
-    <div class="bg-red-900/20 p-4 rounded-[2rem] border-4 border-yellow-600 h-full flex flex-col shadow-2xl backdrop-blur-sm overflow-y-auto no-scrollbar">
-        
-        <!-- TIÊU ĐỀ BẢNG SỐ (FONT BLACK) -->
-        <div class="flex justify-between items-center mb-2 shrink-0">
-            <h3 class="font-goldman text-yellow-400 font-black text-sm uppercase tracking-widest">BẢNG SỐ</h3>
-            <div id="progress-bar" class="bg-yellow-500 text-red-900 px-3 py-0.5 rounded-full font-black text-[9px]">0/90</div>
-        </div>
-
-        <!-- BẢNG SỐ ÉP SIZE -->
-        <div id="loto-board" class="grid grid-cols-10 gap-1 flex-1 content-center">
-            <!-- Render bởi JS -->
-        </div>
-
-        <!-- LỊCH SỬ SỐ (FONT BLACK) -->
-        <div class="mt-2 pt-2 border-t border-yellow-900/50 shrink-0">
-            <p class="text-[12px] font-black text-yellow-400 uppercase mb-1 text-center italic tracking-wider">
-                10 SỐ VỪA GỌI GẦN NHẤT
-            </p>
-            <div id="recent-numbers" class="flex justify-center gap-1.5 h-10 items-center">
+    <!-- CỘT 2: THÀNH VIÊN -->
+    <div class="lg:col-span-3 h-full overflow-hidden">
+        <div class="bg-red-900/40 p-4 rounded-[2rem] border-4 border-yellow-600 h-full flex flex-col shadow-2xl">
+            <h3 class="font-goldman text-yellow-400 font-black text-sm uppercase tracking-widest mb-3">Thành viên (<span id="player-count">0</span>)</h3>
+            <div id="player-list" class="flex-1 overflow-y-auto pr-1 no-scrollbar space-y-1.5">
                 <!-- Render bởi JS -->
             </div>
         </div>
     </div>
-</div>
 
-    <!-- CỘT 3 (3/12): THÀNH VIÊN -->
-    <div class="lg:col-span-3 h-full overflow-hidden">
-        <div class="bg-red-900/40 p-4 rounded-[2rem] border-4 border-yellow-600 h-full flex flex-col shadow-2xl">
-            <h3 class="font-goldman text-yellow-400 font-black text-sm uppercase tracking-widest">Thành viên (<span id="player-count">0</span>)</h3>
-            <div id="player-list" class="flex-1 overflow-y-auto pr-1 no-scrollbar space-y-1.5"></div>
+    <!-- CỘT 3: BẢNG SỐ HỆ THỐNG -->
+    <div class="lg:col-span-6 flex flex-col min-h-0">
+        <div class="bg-red-900/20 p-4 rounded-[2rem] border-4 border-yellow-600 h-full flex flex-col shadow-2xl backdrop-blur-sm overflow-y-auto no-scrollbar">
+            
+            <div class="flex justify-between items-center mb-2 shrink-0">
+                <h3 class="font-goldman text-yellow-400 font-black text-sm uppercase tracking-widest">BẢNG SỐ HỆ THỐNG</h3>
+                <div id="progress-bar" class="bg-yellow-500 text-red-900 px-3 py-0.5 rounded-full font-black text-[9px]">0/90</div>
+            </div>
+
+            <!-- BẢNG SỐ -->
+            <div id="loto-board" class="grid grid-cols-10 gap-1 flex-1 content-start">
+                <!-- Render bởi JS -->
+            </div>
+
+            <!-- LỊCH SỬ SỐ -->
+            <div class="mt-4 pt-2 border-t border-yellow-900/50 shrink-0">
+                <p class="text-[12px] font-black text-yellow-400 uppercase mb-2 text-center italic tracking-wider">Lịch sử 10 số gần nhất</p>
+                <div id="recent-numbers" class="flex justify-center gap-1.5 h-10 items-center">
+                    <!-- Render bởi JS -->
+                </div>
+            </div>
         </div>
     </div>
 </main>
