@@ -372,7 +372,7 @@ function renderWinnerModalLogic(winnerData) {
         icon.innerText = "👑";
         title.innerText = "THẮNG CUỘC!";
         title.className = "text-3xl font-sigmar text-green-600 mb-2 animate-bounce";
-        msg.innerHTML = `<span class="text-xl text-red-600 font-bold">${winnerData.name.toUpperCase()}</span><br><span class="text-[12px] text-slate-500 font-bold">BỘ SỐ: ${winnerData.winningRow.join(' - ')}</span>`;
+        msg.innerHTML = `<span class="text-xl text-red-600 font-bold">CHÚC MỪNG THÁNH ${winnerData.name.toUpperCase()}</span><br><span class="text-[12px] text-slate-500 font-bold">BỘ SỐ MAY MẮN: ${winnerData.winningRow.join(' - ')}</span>`;
         closeBtn.classList.remove('hidden'); 
     } else if (winnerData.isRejected === true) {
         
@@ -389,9 +389,9 @@ function renderWinnerModalLogic(winnerData) {
     
 	} else {
         icon.innerText = "🔔";
-        title.innerText = "ĐANG HÔ KINH!";
+        title.innerText = "CÓ NGƯỜI KINH!";
         title.className = "text-3xl font-sigmar text-red-600 mb-2 animate-pulse";
-        msg.innerText = `${winnerData.name} đang hô Kinh...`;
+        msg.innerText = `Đó là Thánh ${winnerData.name.toUpperCase()}. Chờ VAR...`;
         closeBtn.classList.add('hidden');
     }
 }
