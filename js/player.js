@@ -179,7 +179,8 @@ function renderNewSheet() {
     currentSheet.forEach((ticket, idx) => {
         const ticketDiv = document.createElement('div');
         ticketDiv.id = `select-ticket-${idx}`;
-        ticketDiv.className = `mini-ticket-box cursor-pointer shadow-xl overflow-hidden bg-white rounded-2xl border-2 border-slate-200 transition-all duration-300 hover:scale-105`;
+        // Dùng flex-col để tiêu đề và bảng số khít nhau
+        ticketDiv.className = `mini-ticket-box cursor-pointer bg-white rounded-lg border-2 border-slate-300 overflow-hidden flex flex-col transition-all`;
         
         ticketDiv.onclick = () => {
             if (selectedIndices.has(idx)) {
@@ -195,10 +196,10 @@ function renderNewSheet() {
         };
 
         ticketDiv.innerHTML = `
-            <div class="bg-red-700 text-yellow-300 py-2 px-4 text-center font-black text-[11px] uppercase tracking-widest border-b border-black">
-                MÃ VÉ #${idx + 1}
+            <div class="ticket-header-text bg-red-700 text-yellow-300 py-1 px-2 text-center font-black text-[9px] uppercase border-b border-black">
+                VÉ #${idx + 1}
             </div>
-            <div class="p-4">
+            <div class="p-1 bg-slate-50">
                 ${renderMiniTable(ticket)}
             </div>
         `;
@@ -593,18 +594,18 @@ function playBackgroundMusic() {
  * Vẽ bảng số nhỏ cho Sảnh chọn vé
  */
 function renderMiniTable(ticket) {
-    let html = '<div class="grid grid-cols-9 gap-0 border-[1.5px] border-black overflow-hidden rounded-md shadow-inner">';
+    // Sử dụng chung cấu trúc grid-cols-9 và loto-cell
+    let html = '<div class="border border-black/20 rounded overflow-hidden shadow-inner">';
     ticket.forEach(row => {
+        html += `<div class="grid grid-cols-9 border-b border-black/10">`;
         row.forEach(num => {
             const bgColor = num === 0 ? currentEmptyColor : '#FFFFFF';
-            const textColor = num === 0 ? 'transparent' : '#000000';
-            
             html += `
-                <div class="h-8 flex items-center justify-center text-xs font-black border-[0.5px] border-black" 
-                     style="background-color: ${bgColor}; color: ${textColor};">
-                    ${num === 0 ? '' : num}
+                <div class="loto-cell" style="background-color: ${bgColor}">
+                    ${num !== 0 ? `<span class="cell-num-box text-black">${num}</span>` : ''}
                 </div>`;
         });
+        html += `</div>`;
     });
     html += '</div>';
     return html;
