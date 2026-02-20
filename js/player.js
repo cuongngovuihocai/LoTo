@@ -409,7 +409,8 @@ function renderMyGameTickets() {
 
     myTickets.forEach((ticket, tIdx) => {
         const ticketCard = document.createElement('div');
-        ticketCard.className = "bg-white border border-red-900 shadow rounded-lg overflow-hidden flex flex-col";
+        // Thêm h-fit để vé chỉ cao bằng nội dung bên trong nó
+    ticketCard.className = "bg-white border border-red-900 shadow rounded-lg overflow-hidden flex flex-col h-fit";
         
         let rowsHtml = '';
         ticket.forEach((row) => {
