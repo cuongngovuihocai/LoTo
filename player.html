@@ -9,59 +9,60 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Ép toàn bộ ứng dụng luôn nằm trong 1 màn hình, không có thanh cuộn trình duyệt */
-        html, body {
-            height: 100%;
-            margin: 0;
-            overflow: hidden;
-        /* Chống kéo rơ (bounce) trên iPhone */
-	    position: fixed;
-            width: 100%; 
-        }
-        body {
-            display: flex;
-            flex-direction: column;
-            background-color: #5c0000;
-        }
-    /* Đảm bảo vùng chứa vé có thể vuốt mượt mà trên điện thoại */
+    html, body {
+        height: 100%;
+        margin: 0;
+        background-color: #5c0000;
+        overflow: hidden; 
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Vùng chứa vé: Chia 2 cột đều nhau */
     #my-game-tickets {
-        -webkit-overflow-scrolling: touch; /* Ép iOS dùng scroll mượt */
-        overflow-y: scroll !important;     /* Ép hiện chế độ cuộn dọc */
-        touch-action: pan-y;               /* Cho phép thao tác vuốt dọc */
+        flex: 1;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* Ép 2 cột */
+        gap: 8px;
+        padding: 8px;
     }
 
-    /* Vẫn ẩn thanh cuộn để đẹp mắt nhưng không làm mất tính năng cuộn */
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
-    .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
-/* Thu nhỏ tối đa cho Mobile */
-@media (max-width: 768px) {
-    /* Giảm padding của vùng chứa vé */
-    #my-game-tickets {
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-        gap: 10px !important; /* Thu hẹp khoảng cách giữa các vé */
+    /* Cấu trúc ô số: Rộng bao nhiêu cao bấy nhiêu */
+    .loto-cell {
+        aspect-ratio: 1 / 1; /* Tạo ô vuông hoàn hảo */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-right: 1px solid rgba(0,0,0,0.2);
+        position: relative;
     }
 
-    /* Thu nhỏ chữ và vòng tròn số */
+    /* Vòng tròn số bên trong */
     .cell-num-box {
-        width: 26px !important;
-        height: 26px !important;
-        font-size: 14px !important;
-	line-height: 28px !important;
+        width: 85%;  /* Co giãn theo ô ngoài */
+        height: 85%; /* Co giãn theo ô ngoài */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        transition: all 0.2s;
     }
 
-    /* Giảm chiều cao hàng của vé */
-    .loto-row {
-        height: 35px !important; /* Ép chiều cao cố định thấp hơn */
+    @media (max-width: 768px) {
+        #my-game-tickets {
+            gap: 5px;
+            padding: 5px;
+        }
+        .cell-num-box {
+            font-size: 11px; /* Chữ nhỏ cho mobile */
+        }
     }
-}
 
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
 </head>
