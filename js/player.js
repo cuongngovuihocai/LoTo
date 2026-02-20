@@ -51,6 +51,9 @@ let currentEmptyColor = TICKET_COLORS[0];
  * Xử lý khi người chơi nhập tên và mã phòng
  */
 function handleJoinRoom() {
+    // GỌI NGAY LẬP TỨC KHI BẤM NÚT
+    primeSpeechForIOS(); 
+
     playerName = document.getElementById('input-name').value.trim();
     currentRoomId = document.getElementById('input-room').value.trim();
     
@@ -207,6 +210,7 @@ function renderNewSheet() {
  * Xác nhận các vé đã chọn và bắt đầu vào trận
  */
 function confirmTickets() {
+    primeSpeechForIOS(); 
     if (selectedIndices.size === 0) {
         return showToast("Vui lòng chọn ít nhất 1 vé!");
     }
@@ -663,47 +667,50 @@ function getUrlParam(name) {
  * @param {number} num - Con số vừa mới xổ từ Nhà cái
  */
 function speakNumber(num) {
-    // 1. Lấy trạng thái của nút gạt "Giọng đọc" và thẻ nhạc nền
-    const isVoiceOn = document.getElementById('voice-toggle').checked;
+    // 1. KIỂM TRA AN TOÀN (QUAN TRỌNG): Tránh lỗi "Cannot read properties of null"
+    const voiceToggle = document.getElementById('voice-toggle');
     const music = document.getElementById('bg-music');
     
-    // 2. KIỂM TRA ĐIỀU KIỆN TRƯỚC KHI ĐỌC
-    // - Nếu người chơi tắt Loa
-    // - Hoặc không có số truyền vào
-    // - Hoặc số này vừa mới đọc rồi (tránh đọc lặp khi rớt mạng vào lại)
-    if (!isVoiceOn || !num || num === lastSpokenNum) return;
+    // Nếu không tìm thấy nút gạt (đang ở màn hình đăng nhập chẳng hạn) thì thoát luôn
+    if (!voiceToggle || !num || num === lastSpokenNum) return;
+
+    // Lấy trạng thái bật/tắt
+    const isVoiceOn = voiceToggle.checked;
+    if (!isVoiceOn) return;
+    
+    // 2. NHẬN DIỆN THIẾT BỊ iOS: iPhone/iPad xử lý âm thanh rất khác biệt
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
     // 3. Hủy bỏ các giọng đọc cũ đang dang dở để tránh đọc chồng chéo lên nhau
     window.speechSynthesis.cancel();
 
     // 4. Khởi tạo đối tượng giọng đọc
     const speech = new SpeechSynthesisUtterance();
-    speech.text = `Số... ${num}`; // Nội dung đọc
-    speech.lang = 'vi-VN';        // Ngôn ngữ Tiếng Việt
-    speech.rate = 0.9;            // Tốc độ đọc (0.9 là vừa nghe, không quá nhanh)
-    speech.pitch = 1;             // Độ cao của giọng
+    speech.text = `Số... ${num}`;    // Nội dung đọc
+    speech.lang = 'vi-VN';           // Ngôn ngữ Tiếng Việt
+    speech.rate = isIOS ? 1.0 : 0.9; // Tốc độ đọc (0.9 là vừa nghe, không quá nhanh)
+    speech.pitch = 1;                // Độ cao của giọng
 
     // 5. --- LOGIC AUDIO DUCKING (TỰ ĐỘNG GIẢM NHẠC) ---
     
     // Sự kiện: Bắt đầu đọc số
     speech.onstart = () => {
         // Nếu nhạc đang phát, giảm âm lượng xuống mức cực thấp (5%) để ưu tiên giọng đọc
-        if (music && isMusicPlaying) {
+        if (!isIOS && music && isMusicPlaying) {
             music.volume = 0.05; 
         }
     };
-
     // Sự kiện: Kết thúc đọc số (hoặc bị hủy)
     speech.onend = () => {
         // Trả âm lượng nhạc về mức bình thường (30%) sau khi chị Google đọc xong
-        if (music && isMusicPlaying) {
+        if (!isIOS && music && isMusicPlaying) {
             music.volume = 0.3;
         }
     };
 
-    // 6. Tìm và áp dụng giọng đọc tiếng Việt (nếu trình duyệt có sẵn)
+    // 6. Tìm giọng Việt (Nên ưu tiên các giọng có tên "Linh" hoặc "Vietnamese")
     const voices = window.speechSynthesis.getVoices();
-    const viVoice = voices.find(v => v.lang.includes('vi-VN') || v.name.includes('Vietnamese'));
+    const viVoice = voices.find(v => v.lang.includes('vi-VN'));
     if (viVoice) {
         speech.voice = viVoice;
     }
@@ -711,16 +718,23 @@ function speakNumber(num) {
     // 7. Thực hiện phát giọng đọc
     window.speechSynthesis.speak(speech);
 
-    // 8. Ghi nhớ con số này đã được đọc
+    // 8. Ghi nhớ con số đã đọc
     lastSpokenNum = num; 
 }
 
 /**
  * Một số trình duyệt cần "khởi động" danh sách giọng đọc khi vừa load trang
  */
-window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-};
+if (window.speechSynthesis) {
+    // 1. Gán sự kiện lắng nghe khi danh sách giọng đọc thay đổi
+    speechSynthesis.onvoiceschanged = () => {
+        const voices = speechSynthesis.getVoices();
+        console.log("Đã nạp " + voices.length + " giọng đọc.");
+    };
+    
+    // 2. Gọi ngay lập tức để kích hoạt trình duyệt nạp danh sách (CỰC KỲ QUAN TRỌNG CHO IOS)
+    speechSynthesis.getVoices();
+}
 
 /**
  * Hàm yêu cầu giữ màn hình luôn sáng (Screen Wake Lock)
@@ -749,6 +763,18 @@ async function requestWakeLock() {
     } else {
         console.log('🚫 Trình duyệt của bạn không hỗ trợ API Wake Lock.');
     }
+}
+
+// Hàm "mồi" giọng nói cho iPhone
+function primeSpeechForIOS() {
+    // Thay vì chuỗi rỗng hoàn toàn, ta dùng một khoảng trắng
+    // Khoảng trắng giúp trình duyệt "nghĩ" là có nội dung nhưng thực tế không phát ra tiếng
+    const dummy = new SpeechSynthesisUtterance(" "); 
+    
+    // Không cần đặt volume = 0, cứ để mặc định cho nó "thật"
+    window.speechSynthesis.speak(dummy);
+    
+    console.log("iOS Speech Engine Primed!");
 }
 
 /**
