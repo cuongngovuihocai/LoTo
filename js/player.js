@@ -348,6 +348,8 @@ function startListeningToFirebase() {
             // Khi Host Reset hoặc xóa thông báo trúng, tự động đóng Modal
             if (!modal.classList.contains('hidden')) {
                 modal.classList.add('hidden');
+	// THÊM DÒNG NÀY ĐỂ NGƯỜI CHƠI CŨNG THẤY THÔNG BÁO
+            	showToast("🏁 MỜI CÁC THÁNH DÒ TIẾP...");
             }
         } else {
             // Hiển thị thông báo (Kinh/Thắng/Kinh sai)
@@ -373,12 +375,19 @@ function renderWinnerModalLogic(winnerData) {
         msg.innerHTML = `<span class="text-xl text-red-600 font-bold">${winnerData.name.toUpperCase()}</span><br><span class="text-[12px] text-slate-500 font-bold">BỘ SỐ: ${winnerData.winningRow.join(' - ')}</span>`;
         closeBtn.classList.remove('hidden'); 
     } else if (winnerData.isRejected === true) {
-        icon.innerText = "❌";
+        
+	// TRƯỜNG HỢP NHẬN TIN NHẮN PHẠT (VAR)
+	icon.innerText = "❌";
         title.innerText = winnerData.reason || "KINH SAI!";
         title.className = "text-3xl font-sigmar text-orange-600 mb-2";
-        msg.innerHTML = `Người chơi <span class="font-bold text-red-600">${winnerData.name}</span> báo lỗi.<br><span class="text-slate-500 text-[10px]">Ván chơi tiếp tục...</span>`;
-        closeBtn.classList.add('hidden');
-    } else {
+	
+	// Hiển thị nội dung chi tiết mà Host gửi xuống
+        msg.innerHTML = `
+            <div class="text-slate-800 font-bold mb-2">${winnerData.description}</div>
+            <div class="text-slate-500 uppercase text-[10px] italic">Ván chơi sẽ tiếp tục sau giây lát...</div>
+        `;
+    
+	} else {
         icon.innerText = "🔔";
         title.innerText = "ĐANG HÔ KINH!";
         title.className = "text-3xl font-sigmar text-red-600 mb-2 animate-pulse";

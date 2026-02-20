@@ -406,7 +406,7 @@ function handleWinnerFound(winner) {
     if (!isLegit) {
         // Trường hợp báo số chưa xổ
         renderWinnerModal(winnerNameEl, winner, "KINH SAI!", 
-            `Người chơi ${winner.name} báo hàng số có số chưa xổ!`, "text-red-500");
+            `Người chơi ${winner.name} báo hàng số có số chưa xổ! Ván chơi vẫn tiếp tục...`, "text-red-500");
     } else {
         // 4. KIỂM TRA KINH TRỄ DỰA TRÊN HÀNG TỐT NHẤT
         // lastNumIndex là vị trí của con số "hoàn tất" hàng trúng trong lịch sử
@@ -426,7 +426,7 @@ function handleWinnerFound(winner) {
             const lateCount = currentServerIndex - lastNumIndex;
             
             renderWinnerModal(winnerNameEl, winner, "KINH TRỄ!", 
-                `${winner.name} đã đủ từ số [${missedNum}], nhưng đã để trễ ${lateCount} số mới báo. Rất tiếc phải từ chối.`, 
+                `${winner.name} đã đủ từ số [${missedNum}], nhưng đã để trễ ${lateCount} số mới báo. Ván chơi vẫn tiếp tục...`, 
                 "text-orange-500");
             
             document.querySelector('#winner-modal button').innerText = "BỎ QUA & CHƠI TIẾP";
@@ -450,28 +450,41 @@ function renderWinnerModal(el, winner, title, desc, colorClass) {
 function verifyWinner(isValid) {
     // Lấy tiêu đề hiện tại của Modal để biết Host đang xử lý ca Thắng hay ca Trễ
     const modalTitle = document.querySelector('#winner-name .text-4xl').innerText;
+    // Lấy thêm đoạn miêu tả chi tiết đang hiện trên màn hình Host
+    const modalDesc = document.querySelector('#winner-name .text-sm').innerText;
 
     if (isValid && modalTitle === "THẮNG CUỘC!") {
-        // Chốt thắng thật
+        // CHỐT THẮNG THẬT
         db.ref(`rooms/${roomId}/winner`).update({ isVerified: true });
         showToast("🧧 ĐÃ XÁC NHẬN NGƯỜI THẮNG!");
         isGameRunning = false;
     } else {
-        // TRƯỜNG HỢP KINH SAI HOẶC KINH TRỄ
-        // Trước khi xoá node winner, ta cập nhật trạng thái lỗi để người chơi cùng thấy
+        // TRƯỜNG HỢP KINH SAI HOẶC KINH TRỄ (HỆ THỐNG PHẠT)
+        // Cập nhật trạng thái lỗi để người chơi cùng thấy nội dung VAR
+        // Gửi cả lý do và MIÊU TẢ CHI TIẾT lên cho mọi người cùng đọc
         db.ref(`rooms/${roomId}/winner`).update({
             isRejected: true,
-            reason: modalTitle // "KINH TRỄ!" hoặc "KINH SAI!"
+            reason: modalTitle, 
+            description: modalDesc // Gửi thêm dòng này
         }).then(() => {
-            // Đợi 2 giây cho mọi người đọc tin nhắn rồi mới xoá hẳn node để chơi tiếp
+            // Hiển thị thông báo trên máy Host để biết đang trong thời gian chờ
+            showToast(`⚠️ ${modalTitle} - Đang hiển thị VAR cho toàn phòng (5s)...`);
+
+            // Tăng thời gian chờ lên 5000ms (5 giây) để mọi người kịp đọc tin nhắn VAR
             setTimeout(() => {
+                // Xoá node winner để dọn dẹp màn hình tất cả người chơi
                 db.ref(`rooms/${roomId}/winner`).remove();
+                
+                // Mở lại quyền quay số cho Nhà cái
                 isGameRunning = true;
                 document.getElementById('btn-draw').disabled = false;
-		showToast("Ván chơi tiếp tục...");
-            }, 2000);
+                
+                showToast("🏁 TRẬN ĐẤU TIẾP TỤC! MỜI CÁC THÁNH DÒ TIẾP...");
+            }, 5000); 
         });
     }
+    
+    // Đóng Modal của Host ngay lập tức để Host có thể nhìn lại bảng số nếu cần
     document.getElementById('winner-modal').classList.add('hidden');
 }
 
