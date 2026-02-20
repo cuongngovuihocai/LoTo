@@ -105,15 +105,35 @@
                 </div>
             </div>
         </header>
-
-        <!-- Thanh gạt chế độ (Góc phải, nằm riêng 1 dòng nhỏ) -->
-        <div class="shrink-0 px-4 py-2 flex justify-end items-center gap-2">
-            <span id="mode-label" class="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Dò Thủ Công</span>
-            <label class="relative inline-flex items-center cursor-pointer scale-90">
-                <input type="checkbox" id="auto-toggle" class="sr-only peer" onchange="toggleAutoMode()">
-                <div class="w-11 h-6 bg-red-950 border border-yellow-900/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+        <!-- Cụm nút điều chỉnh âm thanh và chế độ dò -->
+<div class="shrink-0 px-4 py-2 bg-red-950/30 border-b border-yellow-900/20 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto flex flex-wrap justify-end items-center gap-x-4 gap-y-1">
+        <!-- 1. Nhạc nền -->
+        <div class="flex items-center gap-1">
+            <span class="text-[9px] font-black text-yellow-600 uppercase">Nhạc Tết</span>
+            <label class="relative inline-flex items-center cursor-pointer scale-75">
+                <input type="checkbox" id="music-toggle" class="sr-only peer" onchange="toggleMusic()">
+                <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
             </label>
         </div>
+        <!-- 2. Giọng đọc -->
+        <div class="flex items-center gap-1">
+            <span class="text-[9px] font-black text-yellow-600 uppercase">Giọng đọc</span>
+            <label class="relative inline-flex items-center cursor-pointer scale-75">
+                <input type="checkbox" id="voice-toggle" checked class="sr-only peer">
+                <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-yellow-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+        </div>
+        <!-- 3. Chế độ Dò -->
+        <div class="flex items-center gap-1">
+            <span id="mode-label" class="text-[9px] font-black text-yellow-500 uppercase">Dò Tự Động</span>
+            <label class="relative inline-flex items-center cursor-pointer scale-75">
+                <input type="checkbox" id="auto-toggle" class="sr-only peer" onchange="toggleAutoMode()">
+                <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-green-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+        </div>
+    </div>
+</div>
 
         <!-- VÙNG VÉ DÒ: TỰ CO GIÃN VÀ CUỘN BÊN TRONG -->
 <!-- Thay đổi class lg:grid-cols-2 thành md:grid-cols-2 -->
@@ -144,15 +164,8 @@
 
 <!-- Nhạc nền Xuân (Link ví dụ nhạc không bản quyền) -->
 <audio id="bg-music" loop>
-    <source src="assets\giaohuongtet.mp3" type="audio/mpeg">
+    <source src="assets/giaohuongtet.mp3" type="audio/mpeg">
 </audio>
-
-<!-- Nút điều khiển nhạc nhỏ gọn ở góc màn hình -->
-<div class="fixed bottom-4 left-4 z-[100]">
-    <button onclick="toggleMusic()" class="bg-black/50 text-white p-2 rounded-full backdrop-blur-md border border-white/20">
-        <span id="music-icon">🔇</span>
-    </button>
-</div>
 
     <!-- Scripts -->
     <script src="js/firebase-config.js"></script>
