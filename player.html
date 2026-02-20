@@ -8,7 +8,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link rel="stylesheet" href="css/style.css">
-    <style>
+
+<style>
     html, body {
         height: 100%;
         margin: 0;
@@ -18,47 +19,64 @@
         flex-direction: column;
     }
 
-    /* Vùng chứa vé: Chia 2 cột đều nhau */
-    #my-game-tickets {
+    /* VÙNG CHỨA VÉ (Dùng chung cho cả Sảnh chọn và Bàn chơi) */
+    #sheet-container, #my-game-tickets {
         flex: 1;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
         display: grid;
-        grid-template-columns: repeat(2, 1fr); /* Ép 2 cột */
-        gap: 8px;
-        padding: 8px;
+        /* Mặc định 2 cột cho iPad/PC, trên mobile sẽ có Media Query riêng */
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 10px;
+        padding: 10px;
     }
 
-    /* Cấu trúc ô số: Rộng bao nhiêu cao bấy nhiêu */
+    /* Cấu trúc ô số vuông hoàn hảo */
     .loto-cell {
-        aspect-ratio: 1 / 1; /* Tạo ô vuông hoàn hảo */
+        aspect-ratio: 1 / 1; 
         display: flex;
         align-items: center;
         justify-content: center;
-        border-right: 1px solid rgba(0,0,0,0.2);
+        border-right: 1px solid rgba(0,0,0,0.15);
         position: relative;
+        background-color: #ffffff;
     }
 
-    /* Vòng tròn số bên trong */
+    /* Vòng tròn số */
     .cell-num-box {
-        width: 85%;  /* Co giãn theo ô ngoài */
-        height: 85%; /* Co giãn theo ô ngoài */
+        width: 85%;
+        height: 85%;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 900;
+        font-size: 14px;
         transition: all 0.2s;
     }
 
+    /* Thu nhỏ tối đa cho Mobile */
     @media (max-width: 768px) {
-        #my-game-tickets {
-            gap: 5px;
-            padding: 5px;
+        #sheet-container, #my-game-tickets {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 6px !important;
+            padding: 6px !important;
         }
         .cell-num-box {
-            font-size: 11px; /* Chữ nhỏ cho mobile */
+            font-size: 11px !important; /* Chữ nhỏ cho mobile */
         }
+        /* Thu nhỏ tiêu đề vé */
+        .ticket-header-text {
+            font-size: 9px !important;
+            padding: 2px 4px !important;
+        }
+    }
+
+    /* Hiệu ứng vé được chọn ở Sảnh */
+    .mini-ticket-box.selected {
+        border: 3px solid #facc15 !important;
+        box-shadow: 0 0 15px #facc15;
+        transform: scale(1.02);
     }
 
     .no-scrollbar::-webkit-scrollbar { display: none; }
