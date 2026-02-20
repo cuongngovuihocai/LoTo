@@ -13,14 +13,33 @@
         html, body {
             height: 100%;
             margin: 0;
-            overflow: hidden; 
+            overflow: hidden;
+        /* Chống kéo rơ (bounce) trên iPhone */
+	    position: fixed;
+            width: 100%; 
         }
         body {
             display: flex;
             flex-direction: column;
             background-color: #5c0000;
         }
-    </style>
+    /* Đảm bảo vùng chứa vé có thể vuốt mượt mà trên điện thoại */
+    #my-game-tickets {
+        -webkit-overflow-scrolling: touch; /* Ép iOS dùng scroll mượt */
+        overflow-y: scroll !important;     /* Ép hiện chế độ cuộn dọc */
+        touch-action: pan-y;               /* Cho phép thao tác vuốt dọc */
+    }
+
+    /* Vẫn ẩn thanh cuộn để đẹp mắt nhưng không làm mất tính năng cuộn */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>
+
 </head>
 <body class="font-sans antialiased text-amber-100">
 
@@ -138,7 +157,7 @@
         <!-- VÙNG VÉ DÒ: TỰ CO GIÃN VÀ CUỘN BÊN TRONG -->
 <!-- Thay đổi class lg:grid-cols-2 thành md:grid-cols-2 -->
 <!-- md là dành cho máy tính bảng (768px trở lên) -->
-<main id="my-game-tickets" class="flex-1 overflow-y-auto px-4 py-1 grid grid-cols-1 md:grid-cols-2 gap-4 no-scrollbar min-h-0">
+<main id="my-game-tickets" class="flex-1 overflow-y-scroll px-4 py-1 grid grid-cols-1 md:grid-cols-2 gap-4 no-scrollbar min-h-0">
     <!-- Render bởi JS -->
 </main>
         <!-- FOOTER: NÚT KINH CỐ ĐỊNH, KHÔNG ĐÈ VÉ -->
@@ -172,7 +191,4 @@
     <script src="js/loto-logic.js"></script>
     <script src="js/player.js"></script>
 </body>
-
 </html>
-
-
