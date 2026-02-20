@@ -11,6 +11,7 @@ let autoDrawInterval = null;
 
 let startConfirmState = false;
 let deleteConfirmState = false;
+let resetConfirmState = false;
 
 // Đợi trang web tải xong mới chạy
 document.addEventListener('DOMContentLoaded', () => {
@@ -133,20 +134,82 @@ function changeMaxTickets(pId, newVal) {
     db.ref(`rooms/${roomId}/players/${pId}`).update({ maxTickets: newVal });
 }
 
+// --- NÚT BẮT ĐẦU ---
 function handleStartGame() {
     const btn = document.getElementById('btn-start');
     if (!startConfirmState) {
         startConfirmState = true;
-        btn.innerText = "⚠️ BẠN CHẮC CHẮN? ";
+        btn.innerText = "🛑 SẴN SÀNG?";
         btn.style.backgroundColor = "#f97316"; // Màu cam
         setTimeout(() => {
             startConfirmState = false;
-            btn.innerText = "BẮT ĐẦU VÁN MỚI";
-            btn.style.backgroundColor = "#16a34a"; // Màu xanh
+            btn.innerText = "BẮT ĐẦU";
+            btn.style.backgroundColor = "#16a34a"; // Màu xanh gốc
         }, 3000);
     } else {
         startConfirmState = false;
         startGame();
+    }
+}
+
+// --- NÚT RESET ---
+function forceResetGame() {
+    const btn = document.getElementById('btn-reset-game');
+    if (!resetConfirmState) {
+        resetConfirmState = true;
+        btn.innerText = "🔄 TẠO VÁN MỚI?";
+        btn.classList.add('bg-orange-600', 'animate-pulse');
+        setTimeout(() => {
+            resetConfirmState = false;
+            btn.innerText = "RESET";
+            btn.classList.remove('bg-orange-600', 'animate-pulse');
+        }, 3000);
+    } else {
+        resetConfirmState = false;
+        // Thực hiện logic Reset
+        isGameRunning = false;
+        isSpinning = false;
+        if (autoDrawInterval) clearInterval(autoDrawInterval);
+        document.getElementById('auto-draw-toggle').checked = false;
+
+        db.ref(`rooms/${roomId}`).update({
+            status: 'WAITING',
+            current_number: 0,
+            history: [],
+            winner: null
+        });
+
+        drawnHistory = [];
+        allNumbersPool = [];
+        initBoardUI(); 
+        document.getElementById('current-num').classList.add('hidden');
+        document.getElementById('btn-draw').disabled = true;
+        
+        const btnStart = document.getElementById('btn-start');
+        btnStart.innerText = "BẮT ĐẦU";
+        btnStart.disabled = false;
+        btnStart.style.backgroundColor = "#16a34a";
+
+        showToast("♻️ Reset thành công!");
+    }
+}
+
+// --- NÚT XOÁ PHÒNG ---
+function handleDeleteRoom() {
+    const btn = document.getElementById('btn-delete');
+    if (!deleteConfirmState) {
+        deleteConfirmState = true;
+        btn.innerText = "⚠️ XÁC NHẬN XOÁ?";
+        btn.classList.add('bg-red-600', 'text-white', 'animate-pulse');
+        setTimeout(() => {
+            deleteConfirmState = false;
+            btn.innerText = "XOÁ PHÒNG";
+            btn.classList.remove('bg-red-600', 'text-white', 'animate-pulse');
+        }, 3000);
+    } else {
+        db.ref(`rooms/${roomId}`).remove().then(() => {
+            window.location.href = 'index.html';
+        });
     }
 }
 
@@ -259,24 +322,6 @@ function toggleAutoDraw() {
     } else {
         clearInterval(autoDrawInterval);
         autoDrawInterval = null;
-    }
-}
-
-function handleDeleteRoom() {
-    const btn = document.getElementById('btn-reset');
-    if (!deleteConfirmState) {
-        deleteConfirmState = true;
-        btn.innerText = "🛑 XÁC NHẬN XOÁ?";
-        btn.classList.add('bg-red-600', 'text-white', 'animate-pulse');
-        setTimeout(() => {
-            deleteConfirmState = false;
-            btn.innerText = "XOÁ PHÒNG";
-            btn.classList.remove('bg-red-600', 'text-white', 'animate-pulse');
-        }, 3000);
-    } else {
-        db.ref(`rooms/${roomId}`).remove().then(() => {
-            window.location.href = 'index.html';
-        });
     }
 }
 
@@ -446,40 +491,4 @@ function kickPlayer(pId) {
     if(confirm("Bạn muốn mời người chơi này ra khỏi phòng?")) {
         db.ref(`rooms/${roomId}/players/${pId}`).remove();
     }
-}
-
-// Chức năng Hủy ván / Reset ván (khi đang chơi dở)
-function forceResetGame() {
-    if(!confirm("Hủy ván hiện tại và reset lại từ đầu?")) return;
-
-    // Dừng quay số
-    isGameRunning = false;
-    isSpinning = false;
-    if (autoDrawInterval) clearInterval(autoDrawInterval);
-    document.getElementById('auto-draw-toggle').checked = false;
-
-    // Reset dữ liệu trên Firebase
-    db.ref(`rooms/${roomId}`).update({
-        status: 'WAITING',
-        current_number: 0,
-        history: [],
-        winner: null
-    });
-
-    // Reset giao diện Host
-    drawnHistory = [];
-    allNumbersPool = [];
-    document.getElementById('loto-board').innerHTML = '';
-    initBoardUI(); // Vẽ lại bảng trắng
-    
-    document.getElementById('current-num').classList.add('hidden');
-    document.getElementById('btn-draw').disabled = true;
-    
-    // Mở lại nút Bắt đầu
-    const btnStart = document.getElementById('btn-start');
-    btnStart.innerText = "BẮT ĐẦU VÁN MỚI";
-    btnStart.disabled = false;
-    btnStart.style.backgroundColor = "#16a34a";
-
-    showToast("Đã hủy ván đấu. Sẵn sàng chơi lại!");
 }

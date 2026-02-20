@@ -404,16 +404,16 @@ function renderMyGameTickets() {
     const activeNumbers = isAutoMode ? serverSet : myMarkedNumbers;
 
     myTickets.forEach((ticket, tIdx) => {
-        // ... (Phần tạo thẻ div giữ nguyên code cũ) ...
         const ticketCard = document.createElement('div');
-        ticketCard.className = "bg-white border-2 border-red-800 shadow-2xl rounded-2xl overflow-hidden w-full max-w-2xl self-start mb-6";
+        // Dùng border mỏng, shadow nhẹ cho thanh thoát
+	ticketCard.className = "bg-white border border-red-800 shadow-lg rounded-xl overflow-hidden w-full mb-2";
         
         let rowsHtml = '';
         ticket.forEach((row) => {
             const rowNums = row.filter(n => n !== 0).map(n => Number(n));
             const isWinnerRow = rowNums.length > 0 && rowNums.every(n => activeNumbers.has(n));
 
-            rowsHtml += `<div class="grid grid-cols-9 h-12 md:h-14 border-b border-black relative ${isWinnerRow ? 'bg-yellow-100' : ''}">`; 
+            rowsHtml += `<div class="grid grid-cols-9 h-10 md:h-14 border-b border-black relative loto-row ${isWinnerRow ? 'bg-yellow-100' : ''}">`; 
             
             row.forEach(num => {
                 const n = Number(num);
@@ -431,8 +431,8 @@ function renderMyGameTickets() {
                          style="background-color: ${cellBg}"
                          onclick="handleCellClick(${n})">
                         ${n !== 0 ? `
-                            <div class="w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center font-black text-lg md:text-2xl transition-all duration-300
-                                ${isMarked ? 'bg-red-600 text-white scale-110 shadow-lg' : 'text-black'}
+                            <div class="cell-num-box w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center font-black text-base md:text-2xl transition-all duration-300
+                                ${isMarked ? 'bg-red-600 text-white scale-105 shadow-lg' : 'text-black'}
                                 ${isMissed ? 'missed-pulse' : ''} 
                             ">
                                 ${n}
@@ -444,7 +444,7 @@ function renderMyGameTickets() {
         });
 
         ticketCard.innerHTML = `
-            <div class="bg-red-800 text-yellow-300 py-2 px-4 flex justify-between items-center font-black uppercase text-[10px] tracking-widest border-b border-black">
+            <div class="bg-red-800 text-yellow-300 py-1 px-3 flex justify-between items-center font-black uppercase text-[10px] tracking-tight border-b border-black">
                 <span>VÉ MAY MẮN #${tIdx + 1}</span>
                 <span class="text-white/40 text-[8px]">${isAutoMode ? 'AUTO' : 'MANUAL'}</span>
             </div>
