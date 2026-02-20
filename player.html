@@ -25,10 +25,11 @@
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
         display: grid;
-        /* Mặc định 2 cột cho iPad/PC, trên mobile sẽ có Media Query riêng */
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 10px;
-        padding: 10px;
+        /* Mặc định cho màn hình lớn (PC): 3 cột để vé không bị quá to */
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 15px;
+        padding: 15px;
+        align-items: start; /* QUAN TRỌNG: Giúp vé không bị kéo giãn chiều cao */
     }
 
     /* Cấu trúc ô số vuông hoàn hảo */
@@ -53,6 +54,16 @@
         font-weight: 900;
         font-size: 14px;
         transition: all 0.2s;
+    }
+
+    /* TABLET: 2 cột (iPad, máy tính bảng) */
+    @media (max-width: 1024px) {
+        #sheet-container, #my-game-tickets {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 10px;
+        }
+        .cell-num-box { font-size: 14px; }
     }
 
     /* Thu nhỏ tối đa cho Mobile */
