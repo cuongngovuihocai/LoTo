@@ -26,6 +26,8 @@ let serverNumbers = [];       // Danh sách các số Nhà cái đã gọi (Arra
 let myMarkedNumbers = new Set(); // Danh sách các số người chơi đã click (Set of Numbers)
 
 let isMusicPlaying = false;
+let lastSpokenNum = null; // Để tránh máy đọc lặp đi lặp lại một số
+let wakeLock = null; // Để quản lý việc giữ màn hình luôn sáng
 
 // Bộ màu sắc rực rỡ cho 6 vé khác nhau
 const TICKET_THEMES = [
@@ -51,28 +53,34 @@ let currentEmptyColor = TICKET_COLORS[0];
 function handleJoinRoom() {
     playerName = document.getElementById('input-name').value.trim();
     currentRoomId = document.getElementById('input-room').value.trim();
-
+    
+    // 1. Kiểm tra đầu vào
     if (!playerName || !currentRoomId) return showToast("Vui lòng nhập đủ tên và mã phòng!");
 
-    // 1. Kiểm tra LocalStorage
+    // 2. Lấy thông tin đã lưu trong bộ nhớ trình duyệt (LocalStorage) để tránh nick ảo
     const savedRoom = localStorage.getItem('loto_room_id');
     const savedId = localStorage.getItem('loto_player_id');
     const savedName = localStorage.getItem('loto_player_name');
 
+    // 3. Truy cập Firebase để kiểm tra sự tồn tại của phòng
     db.ref(`rooms/${currentRoomId}`).once('value', (snapshot) => {
         if (!snapshot.exists()) return showToast("Phòng này không tồn tại!");
 
         const roomData = snapshot.val();
         let isReturning = false;
 
-        // 2. Xác định xem có phải người cũ quay lại không
+        // 4. LOGIC XÁC ĐỊNH ID NGƯỜI CHƠI
+        // Nếu trùng mã phòng + trùng tên đã lưu -> Lấy lại ID cũ (khôi phục trạng thái)
         if (savedRoom === currentRoomId && savedName === playerName && savedId) {
             playerId = savedId;
             isReturning = true;
         } else {
-            // Người mới hoàn toàn
+
+            // Nếu là người mới hoàn toàn -> Tạo mã ID mới trên Firebase
             const playerRef = db.ref(`rooms/${currentRoomId}/players`).push();
             playerId = playerRef.key;
+
+            // Lưu lại thông tin mới vào máy người dùng
             localStorage.setItem('loto_room_id', currentRoomId);
             localStorage.setItem('loto_player_id', playerId);
             localStorage.setItem('loto_player_name', playerName);
@@ -80,21 +88,24 @@ function handleJoinRoom() {
 
         const myRef = db.ref(`rooms/${currentRoomId}/players/${playerId}`);
         
-        // 3. Cập nhật trạng thái cơ bản lên Server
+        // 5. Cập nhật thông tin lên Server (Dùng .update để không làm mất dữ liệu vé cũ nếu có)
         myRef.update({ name: playerName });
 
-        // 4. Lắng nghe dữ liệu cá nhân (Real-time)
+        // 6. Lắng nghe dữ liệu cá nhân (Real-time)
         myRef.on('value', (pSnapshot) => {
             const data = pSnapshot.val();
             if (!data) return;
 
+            // Cập nhật hạn mức vé từ Nhà cái
             myMaxTickets = data.maxTickets || 0;
             const maxDisplay = document.getElementById('max-ticket-display');
             if (maxDisplay) maxDisplay.innerText = myMaxTickets;
 
-            // Xử lý Lớp phủ chờ cấp vé
+            // Xử lý Lớp phủ chờ Nhà cái phê duyệt vé
             const waitOverlay = document.getElementById('selection-waiting-overlay');
             if (waitOverlay) {
+		
+		// Nếu đã được cấp vé (max > 0) hoặc đã có vé trong tay -> Ẩn lớp phủ
                 if (myMaxTickets > 0 || (data.tickets && data.tickets.length > 0)) {
                     waitOverlay.classList.add('hidden');
                 } else {
@@ -102,9 +113,9 @@ function handleJoinRoom() {
                 }
             }
 
-            // --- QUAN TRỌNG: LOGIC CHUYỂN MÀN HÌNH ---
+            // --- QUAN TRỌNG: LOGIC ĐIỀU HƯỚNG MÀN HÌNH THÔNG MINH --
             
-            // TRƯỜNG HỢP A: Người cũ quay lại và ĐÃ CÓ VÉ
+            // TRƯỜNG HỢP A: Nếu người chơi đã có vé (do quay lại ván đang chơi)
             if (data.tickets && data.tickets.length > 0) {
                 myTickets = data.tickets;
                 
@@ -113,18 +124,19 @@ function handleJoinRoom() {
                     document.getElementById('screen-join').classList.add('hidden');
                     document.getElementById('screen-game').classList.remove('hidden');
                     
-                    // Khởi động dò số và vẽ vé
+                    // Khởi động dò lại số và vẽ lại vé
                     startListeningToFirebase(); 
                     renderMyGameTickets();
                 }
             } 
-            // TRƯỜNG HỢP B: Người mới hoặc người chưa có vé
+            // TRƯỜNG HỢP B: Người mới chưa có vé
             else {
+                // Nếu đang đứng ở màn hình Đăng nhập
                 if (!document.getElementById('screen-join').classList.contains('hidden')) {
                     document.getElementById('screen-join').classList.add('hidden');
                     document.getElementById('screen-selection').classList.remove('hidden');
                     
-                    // Chỉ render bộ vé mới nếu màn hình lựa chọn đang trống
+                    // Chỉ render bộ vé mới nếu màn hình lựa chọn đang trống (tránh lặp vé)
                     if (document.getElementById('sheet-container').innerHTML === "") {
                         renderNewSheet();
                     }
@@ -132,11 +144,19 @@ function handleJoinRoom() {
             }
         });
 
-        // 5. Kích hoạt nhạc nền (nếu có)
-        if (typeof playBackgroundMusic === "function") playBackgroundMusic();
+	// 7. KHỞI TẠO CÁC TÍNH NĂNG BỔ TRỢ
         
-        // 6. Giữ màn hình luôn sáng (Wake Lock)
-        if (typeof requestWakeLock === "function") requestWakeLock();
+        // Phát nhạc nền Tết 
+        if (typeof playBackgroundMusic === "function") {
+            playBackgroundMusic();
+        }
+        
+        
+        // VỊ TRÍ QUAN TRỌNG: GỌI HÀM CHỐNG TẮT MÀN HÌNH (WAKE LOCK)
+        // Cần gọi ngay sau tương tác người dùng (Click nút Vào phòng)
+        if (typeof requestWakeLock === "function") {
+            requestWakeLock(); 
+        }
     });
 }
 
@@ -214,28 +234,6 @@ function confirmTickets() {
     });
 }
 
-function playBackgroundMusic() {
-    const music = document.getElementById('bg-music');
-    if (music && !isMusicPlaying) {
-        music.volume = 0.3; // Chỉnh âm lượng nhỏ thôi (30%)
-        music.play().catch(e => console.log("Chờ tương tác để phát nhạc"));
-        isMusicPlaying = true;
-        document.getElementById('music-icon').innerText = "🔊";
-    }
-}
-
-function toggleMusic() {
-    const music = document.getElementById('bg-music');
-    const icon = document.getElementById('music-icon');
-    if (music.paused) {
-        music.play();
-        icon.innerText = "🔊";
-    } else {
-        music.pause();
-        icon.innerText = "🔇";
-    }
-}
-
 // ==========================================
 // 3. MÀN HÌNH 3: TRONG TRẬN ĐẤU (GAMEPLAY)
 // ==========================================
@@ -250,7 +248,7 @@ function startListeningToFirebase() {
         try {
             const data = snapshot.val();
             
-            // Chuyển đổi dữ liệu an toàn (tránh lỗi null hoặc object)
+            // Bước A: Chuẩn hóa dữ liệu từ Firebase (Xử lý cả mảng và Object)
             let rawList = [];
             if (Array.isArray(data)) {
                 rawList = data;
@@ -258,75 +256,96 @@ function startListeningToFirebase() {
                 rawList = Object.values(data);
             }
 
-            // === LOGIC TỰ ĐỘNG VỀ SẢNH CHỌN VÉ KHI RESET ===
-            if (rawList.length === 0) {
+            // =============================================================
+            // LOGIC PHÁT HIỆN LỆNH RESET (TRỌNG TÂM SỬA LỖI)
+            // =============================================================
+            // ĐIỀU KIỆN: Danh sách mới TRỐNG (length === 0) 
+            // VÀ Danh sách cũ trong máy ĐANG CÓ SỐ (serverNumbers.length > 0)
+            if (rawList.length === 0 && serverNumbers.length > 0) {
+                
                 const screenGame = document.getElementById('screen-game');
-                const screenSelection = document.getElementById('screen-selection');
-
-                // Chỉ thực hiện nếu đang ở màn hình Game (tránh lặp vô tận)
+                
+                // Chỉ đẩy về sảnh chọn vé nếu người chơi đang ở trong màn hình bàn cờ
                 if (!screenGame.classList.contains('hidden')) {
                     showToast("♻️ VÁN MỚI! MỜI BẠN CHỌN VÉ...");
 
-                    // 1. Reset dữ liệu cục bộ
-                    serverNumbers = [];
-                    myMarkedNumbers.clear();
-                    myTickets = [];
-                    selectedIndices.clear();
+                    // 1. Dọn dẹp dữ liệu cũ trong máy
+                    serverNumbers = [];         // Xóa lịch sử cũ
+                    myMarkedNumbers.clear();    // Xóa các số đã đánh dấu (chấm đỏ)
+                    myTickets = [];             // Xóa vé cũ
+                    selectedIndices.clear();    // Xóa lựa chọn vé cũ
+                    lastSpokenNum = null;       // Reset bộ nhớ giọng đọc
 
-                    // 2. Chuyển giao diện về Sảnh Chọn Vé
-                    screenGame.classList.add('hidden');       // Ẩn bàn cờ
-                    screenSelection.classList.remove('hidden'); // Hiện sảnh chọn vé
+                    // 2. Chuyển đổi giao diện về Sảnh Chọn Vé
+                    screenGame.classList.add('hidden');
+                    document.getElementById('screen-selection').classList.remove('hidden');
 
-                    // 3. Reset trạng thái trên Firebase (Để Host thấy đèn chuyển màu đỏ/vàng)
+                    // 3. Báo cáo trạng thái lên Server để Nhà cái thấy đèn đỏ/vàng
                     db.ref(`rooms/${currentRoomId}/players/${playerId}`).update({
-                        status: 'WAITING_FOR_HOST', // Trạng thái chờ chọn vé
-                        tickets: []                 // Xóa vé cũ trên server
+                        status: 'WAITING_FOR_HOST',
+                        tickets: []
                     });
 
-                    // 4. Sinh ra bộ vé mới ngẫu nhiên (để người chơi không bị chán vé cũ)
+                    // 4. Sinh bộ 6 vé mới cho ván mới
                     renderNewSheet();
+                    
+                    return; // Ngắt hàm tại đây, không chạy các lệnh phía dưới
                 }
             } 
-            // === LOGIC ĐANG CHƠI BÌNH THƯỜNG ===
-            else {
-                // Cập nhật danh sách số từ Server
+            // =============================================================
+            // LOGIC CẬP NHẬT SỐ BÌNH THƯỜNG
+            // =============================================================
+            if (rawList.length > 0) {
+                // Cập nhật danh sách "cũ" bằng danh sách "mới" vừa nhận
                 serverNumbers = rawList.map(n => Number(n));
                 
-                // Nếu đang bật Auto -> Tự động đánh dấu số mới
+                // Lấy con số mới nhất để đọc
+                const latestNum = serverNumbers[serverNumbers.length - 1];
+                if (latestNum) {
+                    speakNumber(latestNum); // Gọi giọng đọc (đã kèm Audio Ducking)
+                }
+
+                // Nếu đang ở chế độ Dò Tự Động -> Đánh dấu ngay
                 if (isAutoMode) {
                     serverNumbers.forEach(n => myMarkedNumbers.add(Number(n)));
                 }
                 
-                // Vẽ lại giao diện bàn cờ ngay lập tức
+                // Vẽ lại giao diện
                 requestAnimationFrame(() => {
                     updateGameUI();
                     renderMyGameTickets();
                 });
                 
-                // Rung máy báo hiệu số mới (chỉ rung khi có số về, không rung khi reset)
-                if (rawList.length > 0 && window.navigator && window.navigator.vibrate) {
+                // Rung máy báo hiệu
+                if (window.navigator && window.navigator.vibrate) {
                     try { window.navigator.vibrate(200); } catch(e) {}
                 }
+            } 
+            else {
+                // TRƯỜNG HỢP: Vừa vào phòng, cả server và máy đều chưa có số
+                // (Giúp người chơi ở lại màn hình chờ ván đầu tiên mà không bị đẩy đi)
+                serverNumbers = []; 
+                updateGameUI();
+                renderMyGameTickets();
             }
 
         } catch (err) {
-            console.error("Lỗi đồng bộ:", err);
+            console.error("Lỗi đồng bộ lịch sử số:", err);
         }
     });
 
-    // 2. LẮNG NGHE THÔNG BÁO WINNER (TỰ ĐỘNG TẮT KHI HOST RESET)
+    // 2. LẮNG NGHE THÔNG BÁO WINNER (HỆ THỐNG VAR)
     db.ref(`rooms/${currentRoomId}/winner`).on('value', (snapshot) => {
         const winnerData = snapshot.val();
         const modal = document.getElementById('announcement-modal');
         
         if (!winnerData) {
-            // TRƯỜNG HỢP: NHÀ CÁI ĐÃ XÓA NGƯỜI THẮNG HOẶC RESET GAME
-            // Tự động đóng modal ngay lập tức
+            // Khi Host Reset hoặc xóa thông báo trúng, tự động đóng Modal
             if (!modal.classList.contains('hidden')) {
                 modal.classList.add('hidden');
             }
         } else {
-            // TRƯỜNG HỢP: CÓ THÔNG BÁO MỚI (KINH/THẮNG/PHẠT)
+            // Hiển thị thông báo (Kinh/Thắng/Kinh sai)
             renderWinnerModalLogic(winnerData);
         }
     });
@@ -497,6 +516,81 @@ function callKinh() {
     }
 }
 
+/**
+ * Hàm xử lý Bật/Tắt nhạc nền Tết - Được gọi khi người dùng tác động vào nút gạt "Nhạc Tết"
+ */
+function toggleMusic() {
+    const music = document.getElementById('bg-music');
+    const musicToggle = document.getElementById('music-toggle');
+
+    // 1. Kiểm tra xem nút gạt đang ở trạng thái nào (ON hay OFF)
+    const isChecked = musicToggle.checked;
+    
+    if (isChecked) {
+        // --- TRƯỜNG HỢP: BẬT NHẠC ---
+        music.volume = 0.3; // Thiết lập âm lượng chuẩn (30%) cho nhạc nền
+        
+        // Sử dụng .play() với Promise để xử lý lỗi nếu trình duyệt chặn phát nhạc
+        music.play()
+            .then(() => {
+                isMusicPlaying = true; // Đánh dấu trạng thái là ĐANG PHÁT để hỗ trợ Audio Ducking
+                console.log("Nhạc nền Tết đã bắt đầu phát.");
+            })
+            .catch(error => {
+                // Nếu trình duyệt chặn (do người dùng chưa bấm gì trên trang), trả nút gạt về OFF
+                console.warn("Phát nhạc thất bại (Cần tương tác người dùng):", error);
+                musicToggle.checked = false; 
+                isMusicPlaying = false;
+                showToast("Vui lòng tương tác với trang web để phát nhạc!");
+            });
+    } else {
+        // --- TRƯỜNG HỢP: TẮT NHẠC ---
+        music.pause();
+        isMusicPlaying = false; // Đánh dấu trạng thái là ĐÃ TẮT
+        console.log("Nhạc nền Tết đã tạm dừng.");
+    }
+}
+
+/**
+ * Hàm khởi động nhạc nền hệ thống - Được gọi tự động khi người chơi bấm nút "Vào phòng" hoặc "Chơi ngay"
+ */
+function playBackgroundMusic() {
+    const music = document.getElementById('bg-music');
+    const musicToggle = document.getElementById('music-toggle'); // Nút gạt Nhạc Tết mới
+    
+    // Chỉ cố gắng phát nhạc nếu thẻ audio tồn tại và nhạc chưa được đánh dấu là đang phát
+    if (music && !isMusicPlaying) {
+        
+        // 1. Thiết lập âm lượng mặc định (30% để không làm giật mình người chơi)
+        music.volume = 0.3; 
+
+        // 2. Thực hiện lệnh phát nhạc
+        // Vì lệnh .play() trả về một Promise, chúng ta xử lý theo 2 hướng thành công/thất bại
+        music.play()
+            .then(() => {
+                // --- TRƯỜNG HỢP: TRÌNH DUYỆT CHO PHÉP PHÁT ---
+                isMusicPlaying = true; // Cập nhật biến trạng thái toàn cục
+                
+                // Tự động gạt nút Switch trên giao diện sang trạng thái ON (màu xanh)
+                if (musicToggle) {
+                    musicToggle.checked = true;
+                }
+                console.log("Khởi động nhạc nền thành công.");
+            })
+            .catch(error => {
+                // --- TRƯỜNG HỢP: TRÌNH DUYỆT CHẶN (Do chưa có tương tác người dùng) ---
+                console.warn("Nhạc nền bị chặn bởi chính sách trình duyệt:", error);
+                
+                isMusicPlaying = false;
+                
+                // Đảm bảo nút Switch trên giao diện ở trạng thái OFF (màu xám)
+                if (musicToggle) {
+                    musicToggle.checked = false;
+                }
+            });
+    }
+}
+
 // ==========================================
 // 4. HÀM HỖ TRỢ (UI HELPERS)
 // ==========================================
@@ -563,5 +657,110 @@ function getUrlParam(name) {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
 }
+
+/**
+ * Hàm đọc số bằng giọng nói (Global Voice)
+ * @param {number} num - Con số vừa mới xổ từ Nhà cái
+ */
+function speakNumber(num) {
+    // 1. Lấy trạng thái của nút gạt "Giọng đọc" và thẻ nhạc nền
+    const isVoiceOn = document.getElementById('voice-toggle').checked;
+    const music = document.getElementById('bg-music');
+    
+    // 2. KIỂM TRA ĐIỀU KIỆN TRƯỚC KHI ĐỌC
+    // - Nếu người chơi tắt Loa
+    // - Hoặc không có số truyền vào
+    // - Hoặc số này vừa mới đọc rồi (tránh đọc lặp khi rớt mạng vào lại)
+    if (!isVoiceOn || !num || num === lastSpokenNum) return;
+
+    // 3. Hủy bỏ các giọng đọc cũ đang dang dở để tránh đọc chồng chéo lên nhau
+    window.speechSynthesis.cancel();
+
+    // 4. Khởi tạo đối tượng giọng đọc
+    const speech = new SpeechSynthesisUtterance();
+    speech.text = `Số... ${num}`; // Nội dung đọc
+    speech.lang = 'vi-VN';        // Ngôn ngữ Tiếng Việt
+    speech.rate = 0.9;            // Tốc độ đọc (0.9 là vừa nghe, không quá nhanh)
+    speech.pitch = 1;             // Độ cao của giọng
+
+    // 5. --- LOGIC AUDIO DUCKING (TỰ ĐỘNG GIẢM NHẠC) ---
+    
+    // Sự kiện: Bắt đầu đọc số
+    speech.onstart = () => {
+        // Nếu nhạc đang phát, giảm âm lượng xuống mức cực thấp (5%) để ưu tiên giọng đọc
+        if (music && isMusicPlaying) {
+            music.volume = 0.05; 
+        }
+    };
+
+    // Sự kiện: Kết thúc đọc số (hoặc bị hủy)
+    speech.onend = () => {
+        // Trả âm lượng nhạc về mức bình thường (30%) sau khi chị Google đọc xong
+        if (music && isMusicPlaying) {
+            music.volume = 0.3;
+        }
+    };
+
+    // 6. Tìm và áp dụng giọng đọc tiếng Việt (nếu trình duyệt có sẵn)
+    const voices = window.speechSynthesis.getVoices();
+    const viVoice = voices.find(v => v.lang.includes('vi-VN') || v.name.includes('Vietnamese'));
+    if (viVoice) {
+        speech.voice = viVoice;
+    }
+
+    // 7. Thực hiện phát giọng đọc
+    window.speechSynthesis.speak(speech);
+
+    // 8. Ghi nhớ con số này đã được đọc
+    lastSpokenNum = num; 
+}
+
+/**
+ * Một số trình duyệt cần "khởi động" danh sách giọng đọc khi vừa load trang
+ */
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
+
+/**
+ * Hàm yêu cầu giữ màn hình luôn sáng (Screen Wake Lock)
+ * Giúp ngăn điện thoại tự động khóa màn hình hoặc giảm độ sáng khi đang chơi game.
+ */
+async function requestWakeLock() {
+    // 1. Kiểm tra xem trình duyệt có hỗ trợ API Wake Lock hay không
+    if ('wakeLock' in navigator) {
+        try {
+            // 2. Yêu cầu quyền giữ màn hình sáng
+            // Lệnh này trả về một đối tượng "Sentinel" để quản lý việc khóa màn hình
+            wakeLock = await navigator.wakeLock.request('screen');
+
+            console.log('✅ Chế độ chống tắt màn hình đã được kích hoạt.');
+
+            // 3. Lắng nghe sự kiện "release" (bị nhả quyền)
+            // Quyền này sẽ bị nhả ra nếu người chơi chuyển sang tab khác hoặc thu nhỏ trình duyệt
+            wakeLock.addEventListener('release', () => {
+                console.log('⚠️ Chế độ chống tắt màn hình đã bị tạm dừng.');
+            });
+
+        } catch (err) {
+            // Trường hợp lỗi (thường do hệ thống hoặc cấu hình pin của điện thoại)
+            console.warn(`❌ Không thể giữ màn hình sáng: ${err.name}, ${err.message}`);
+        }
+    } else {
+        console.log('🚫 Trình duyệt của bạn không hỗ trợ API Wake Lock.');
+    }
+}
+
+/**
+ * TỰ ĐỘNG XIN LẠI QUYỀN KHI QUAY LẠI TRÌNH DUYỆT
+ * Nếu người chơi thoát ra màn hình chính rồi quay lại trình duyệt, 
+ * chúng ta cần xin lại quyền Wake Lock ngay lập tức.
+ */
+document.addEventListener('visibilitychange', async () => {
+    // Nếu trang web hiện diện trở lại và trước đó đã từng có quyền Wake Lock
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+    }
+});
 
 // Hết file player.js
