@@ -25,6 +25,8 @@ let isAutoMode = false;       // Trạng thái nút gạt Dò tự động
 let serverNumbers = [];       // Danh sách các số Nhà cái đã gọi (Array of Numbers)
 let myMarkedNumbers = new Set(); // Danh sách các số người chơi đã click (Set of Numbers)
 
+let isMusicPlaying = false;
+
 // Bộ màu sắc rực rỡ cho 6 vé khác nhau
 const TICKET_THEMES = [
     { name: 'Hồng', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-900', numColor: 'text-rose-700', dot: 'bg-rose-300' },
@@ -50,52 +52,91 @@ function handleJoinRoom() {
     playerName = document.getElementById('input-name').value.trim();
     currentRoomId = document.getElementById('input-room').value.trim();
 
-    if (!playerName || !currentRoomId) {
-        return showToast("Vui lòng nhập đủ tên và mã phòng!");
-    }
+    if (!playerName || !currentRoomId) return showToast("Vui lòng nhập đủ tên và mã phòng!");
 
-    // Kiểm tra phòng có tồn tại trên Firebase không
+    // 1. Kiểm tra LocalStorage
+    const savedRoom = localStorage.getItem('loto_room_id');
+    const savedId = localStorage.getItem('loto_player_id');
+    const savedName = localStorage.getItem('loto_player_name');
+
     db.ref(`rooms/${currentRoomId}`).once('value', (snapshot) => {
-        if (!snapshot.exists()) {
-            return showToast("Phòng này không tồn tại!");
+        if (!snapshot.exists()) return showToast("Phòng này không tồn tại!");
+
+        const roomData = snapshot.val();
+        let isReturning = false;
+
+        // 2. Xác định xem có phải người cũ quay lại không
+        if (savedRoom === currentRoomId && savedName === playerName && savedId) {
+            playerId = savedId;
+            isReturning = true;
+        } else {
+            // Người mới hoàn toàn
+            const playerRef = db.ref(`rooms/${currentRoomId}/players`).push();
+            playerId = playerRef.key;
+            localStorage.setItem('loto_room_id', currentRoomId);
+            localStorage.setItem('loto_player_id', playerId);
+            localStorage.setItem('loto_player_name', playerName);
         }
 
-        // TẠO ID DUY NHẤT CHO NGƯỜI CHƠI (Push 1 lần duy nhất)
-        const playerRef = db.ref(`rooms/${currentRoomId}/players`).push();
-        playerId = playerRef.key; 
+        const myRef = db.ref(`rooms/${currentRoomId}/players/${playerId}`);
         
-        // Khởi tạo dữ liệu người chơi ở trạng thái Chờ
-        playerRef.set({
-            name: playerName,
-            maxTickets: 0, 
-            tickets: [],
-            status: 'WAITING_FOR_HOST'
-        });
+        // 3. Cập nhật trạng thái cơ bản lên Server
+        myRef.update({ name: playerName });
 
-        // LẮNG NGHE HẠN MỨC VÉ TỪ NHÀ CÁI (Real-time)
-        playerRef.on('value', (pSnapshot) => {
+        // 4. Lắng nghe dữ liệu cá nhân (Real-time)
+        myRef.on('value', (pSnapshot) => {
             const data = pSnapshot.val();
-            if (data) {
-                myMaxTickets = data.maxTickets || 0;
-                const maxDisplay = document.getElementById('max-ticket-display');
-                if (maxDisplay) maxDisplay.innerText = myMaxTickets;
-                
-                // Ẩn/Hiện lớp phủ chờ Nhà cái phê duyệt
-                const waitOverlay = document.getElementById('selection-waiting-overlay');
-                if (myMaxTickets > 0) {
+            if (!data) return;
+
+            myMaxTickets = data.maxTickets || 0;
+            const maxDisplay = document.getElementById('max-ticket-display');
+            if (maxDisplay) maxDisplay.innerText = myMaxTickets;
+
+            // Xử lý Lớp phủ chờ cấp vé
+            const waitOverlay = document.getElementById('selection-waiting-overlay');
+            if (waitOverlay) {
+                if (myMaxTickets > 0 || (data.tickets && data.tickets.length > 0)) {
                     waitOverlay.classList.add('hidden');
                 } else {
                     waitOverlay.classList.remove('hidden');
                 }
             }
+
+            // --- QUAN TRỌNG: LOGIC CHUYỂN MÀN HÌNH ---
+            
+            // TRƯỜNG HỢP A: Người cũ quay lại và ĐÃ CÓ VÉ
+            if (data.tickets && data.tickets.length > 0) {
+                myTickets = data.tickets;
+                
+                // Nếu đang ở màn hình Đăng nhập (vừa mới vào lại)
+                if (!document.getElementById('screen-join').classList.contains('hidden')) {
+                    document.getElementById('screen-join').classList.add('hidden');
+                    document.getElementById('screen-game').classList.remove('hidden');
+                    
+                    // Khởi động dò số và vẽ vé
+                    startListeningToFirebase(); 
+                    renderMyGameTickets();
+                }
+            } 
+            // TRƯỜNG HỢP B: Người mới hoặc người chưa có vé
+            else {
+                if (!document.getElementById('screen-join').classList.contains('hidden')) {
+                    document.getElementById('screen-join').classList.add('hidden');
+                    document.getElementById('screen-selection').classList.remove('hidden');
+                    
+                    // Chỉ render bộ vé mới nếu màn hình lựa chọn đang trống
+                    if (document.getElementById('sheet-container').innerHTML === "") {
+                        renderNewSheet();
+                    }
+                }
+            }
         });
 
-        // Chuyển từ màn hình Đăng nhập sang màn hình Chọn vé
-        document.getElementById('screen-join').classList.add('hidden');
-        document.getElementById('screen-selection').classList.remove('hidden');
+        // 5. Kích hoạt nhạc nền (nếu có)
+        if (typeof playBackgroundMusic === "function") playBackgroundMusic();
         
-        // Sinh bộ 6 vé đầu tiên
-        renderNewSheet();
+        // 6. Giữ màn hình luôn sáng (Wake Lock)
+        if (typeof requestWakeLock === "function") requestWakeLock();
     });
 }
 
@@ -171,6 +212,28 @@ function confirmTickets() {
             renderMyGameTickets();
         }
     });
+}
+
+function playBackgroundMusic() {
+    const music = document.getElementById('bg-music');
+    if (music && !isMusicPlaying) {
+        music.volume = 0.3; // Chỉnh âm lượng nhỏ thôi (30%)
+        music.play().catch(e => console.log("Chờ tương tác để phát nhạc"));
+        isMusicPlaying = true;
+        document.getElementById('music-icon').innerText = "🔊";
+    }
+}
+
+function toggleMusic() {
+    const music = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    if (music.paused) {
+        music.play();
+        icon.innerText = "🔊";
+    } else {
+        music.pause();
+        icon.innerText = "🔇";
+    }
 }
 
 // ==========================================
