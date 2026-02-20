@@ -38,6 +38,30 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+
+/* Thu nhỏ tối đa cho Mobile */
+@media (max-width: 768px) {
+    /* Giảm padding của vùng chứa vé */
+    #my-game-tickets {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        gap: 10px !important; /* Thu hẹp khoảng cách giữa các vé */
+    }
+
+    /* Thu nhỏ chữ và vòng tròn số */
+    .cell-num-box {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 14px !important;
+	line-height: 28px !important;
+    }
+
+    /* Giảm chiều cao hàng của vé */
+    .loto-row {
+        height: 35px !important; /* Ép chiều cao cố định thấp hơn */
+    }
+}
+
 </style>
 
 </head>
@@ -114,7 +138,7 @@
             <div class="max-w-6xl mx-auto flex items-center justify-between px-2">
                 <!-- Logo to bên trái -->
                 <div class="flex-1">
-                    <img src="assets/logo.png" alt="Logo" class="h-10 md:h-20 w-auto drop-shadow-lg">
+                    <img src="assets/logo.png" alt="Logo" class="h-12 md:h-20 w-auto drop-shadow-lg">
                 </div>
 
                 <!-- Số hiện tại thu nhỏ bên phải -->
@@ -161,12 +185,12 @@
     <!-- Render bởi JS -->
 </main>
         <!-- FOOTER: NÚT KINH CỐ ĐỊNH, KHÔNG ĐÈ VÉ -->
-        <footer class="shrink-0 p-4 bg-gradient-to-t from-red-950 to-transparent flex justify-center">
-            <button onclick="callKinh()" 
-                class="w-full max-w-md bg-gradient-to-r from-red-600 to-red-800 text-white font-sigmar text-3xl py-4 rounded-2xl shadow-2xl border-4 border-yellow-400 active:scale-95 transition-all uppercase tracking-widest">
-                KINH !!!
-            </button>
-        </footer>
+	<footer class="shrink-0 p-2 md:p-4 bg-gradient-to-t from-red-950 to-transparent flex justify-center">
+	    <button onclick="callKinh()" 
+	        class="w-full max-w-md bg-gradient-to-r from-red-600 to-red-800 text-white font-sigmar text-xl md:text-3xl py-2 md:py-4 rounded-xl shadow-xl border-2 md:border-4 border-yellow-400 active:scale-95 transition-all uppercase tracking-widest">
+	        KINH !!!
+	    </button>
+	</footer>
     </div>
 
     <!-- CÁC THÀNH PHẦN NỔI (MODALS & TOAST) -->
