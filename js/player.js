@@ -391,49 +391,40 @@ function renderMyGameTickets() {
     const container = document.getElementById('my-game-tickets');
     if (!container) return;
     
-    // Lưu lại vị trí cuộn hiện tại để khi vẽ lại không bị nhảy trang
     const scrollPos = container.scrollTop;
-    
     container.innerHTML = '';
 
     const serverSet = new Set(serverNumbers.map(n => Number(n)));
-    
-    // FIX: Logic Active Numbers
-    // Ở chế độ Auto: Active là tất cả số Server đã gọi
-    // Ở chế độ Manual: Active là những số User đã click (myMarkedNumbers)
     const activeNumbers = isAutoMode ? serverSet : myMarkedNumbers;
 
     myTickets.forEach((ticket, tIdx) => {
         const ticketCard = document.createElement('div');
-        // Dùng border mỏng, shadow nhẹ cho thanh thoát
-	ticketCard.className = "bg-white border border-red-800 shadow-lg rounded-xl overflow-hidden w-full mb-2";
+        ticketCard.className = "bg-white border border-red-900 shadow rounded-lg overflow-hidden flex flex-col";
         
         let rowsHtml = '';
         ticket.forEach((row) => {
             const rowNums = row.filter(n => n !== 0).map(n => Number(n));
             const isWinnerRow = rowNums.length > 0 && rowNums.every(n => activeNumbers.has(n));
 
-            rowsHtml += `<div class="grid grid-cols-9 h-10 md:h-14 border-b border-black relative loto-row ${isWinnerRow ? 'bg-yellow-100' : ''}">`; 
+            // Dòng chứa 9 cột, không fix chiều cao
+            rowsHtml += `<div class="grid grid-cols-9 border-b border-black/20 ${isWinnerRow ? 'bg-yellow-100' : ''}">`; 
             
             row.forEach(num => {
                 const n = Number(num);
                 const isMarked = n !== 0 && activeNumbers.has(n);
-                
-                // FIX: Logic Missed Pulse (Chỉ hiện ở Manual)
-                // Số đã xổ (có trong serverSet) NHƯNG chưa được đánh dấu (chưa có trong myMarkedNumbers)
-                const isMissed = n !== 0 && !isAutoMode && serverSet.has(n) && !myMarkedNumbers.has(n);
+                const isMissed = n !== 0 && !isMarked && serverSet.has(n);
                 
                 let cellBg = n === 0 ? currentEmptyColor : '#FFFFFF';
                 if (isWinnerRow && n !== 0) cellBg = '#fef08a';
 
                 rowsHtml += `
-                    <div class="flex items-center justify-center border-r border-black cursor-pointer relative" 
+                    <div class="loto-cell" 
                          style="background-color: ${cellBg}"
                          onclick="handleCellClick(${n})">
                         ${n !== 0 ? `
-                            <div class="cell-num-box w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center font-black text-base md:text-2xl transition-all duration-300
-                                ${isMarked ? 'bg-red-600 text-white scale-105 shadow-lg' : 'text-black'}
-                                ${isMissed ? 'missed-pulse' : ''} 
+                            <div class="cell-num-box transition-all duration-200
+                                ${isMarked ? 'bg-red-600 !text-white' : 'text-black'}
+                                ${isMissed && !isAutoMode ? 'missed-pulse' : ''} 
                             ">
                                 ${n}
                             </div>
@@ -444,16 +435,15 @@ function renderMyGameTickets() {
         });
 
         ticketCard.innerHTML = `
-            <div class="bg-red-800 text-yellow-300 py-1 px-3 flex justify-between items-center font-black uppercase text-[10px] tracking-tight border-b border-black">
-                <span>VÉ MAY MẮN #${tIdx + 1}</span>
-                <span class="text-white/40 text-[8px]">${isAutoMode ? 'AUTO' : 'MANUAL'}</span>
+            <div class="bg-red-800 text-yellow-300 py-0.5 px-2 flex justify-between items-center font-black uppercase text-[8px] sm:text-[10px] border-b border-black">
+                <span>VÉ #${tIdx + 1}</span>
+                <span class="opacity-40 font-normal">${isAutoMode ? 'AUTO' : 'MANUAL'}</span>
             </div>
-            <div>${rowsHtml}</div>
+            <div class="flex-1">${rowsHtml}</div>
         `;
         container.appendChild(ticketCard);
     });
     
-    // Khôi phục vị trí cuộn
     container.scrollTop = scrollPos;
 }
 
