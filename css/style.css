@@ -1,4 +1,4 @@
-/* --- PHÔNG CHỮ & NỀN TỔNG THỂ --- */
+/* --- PHÔNG CHỮ & BIẾN MÀU SẮC --- */
 @import url('https://fonts.googleapis.com/css2?family=Goldman&family=Sigmar+One&display=swap');
 
 :root {
@@ -7,31 +7,82 @@
     --vang-gold: #facc15;
     --vang-dam: #a16207;
     --trang-nga: #fef3c7;
+    --den-vien: #000000;
+    --do-vien-ngoai: #450a0a;
 }
 
-body {
+/* --- CẤU TRÚC CƠ BẢN --- */
+html, body {
+    height: 100%;
+    margin: 0;
     background-color: var(--do-do);
+    /* Họa tiết nền chấm bi chìm */
     background-image: radial-gradient(#800000 1px, transparent 0);
     background-size: 40px 40px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--trang-nga);
+    /* Ngăn cuộn trang trên mobile để tạo cảm giác App */
+    overflow: hidden; 
+    display: flex;
+    flex-direction: column;
 }
 
 .font-sigmar { font-family: 'Sigmar One', cursive; }
 .font-goldman { font-family: 'Goldman', display; }
 
-/* --- HIỆU ỨNG LUNG LINH & HÀO QUANG --- */
-@keyframes gold-glow {
-    from { box-shadow: 0 0 15px var(--vang-gold); }
-    to { box-shadow: 0 0 40px #fbbf24, 0 0 10px #ffffff; }
+/* --- 1. CÁC THÀNH PHẦN CHUNG (Utility) --- */
+
+/* Ẩn thanh cuộn nhưng vẫn cho phép cuộn */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Hiệu ứng nút bấm chung */
+button { transition: all 0.2s ease; cursor: pointer; }
+button:active { transform: scale(0.95); }
+
+/* --- 2. HIỆU ỨNG ANIMATION --- */
+
+/* Fade In: Dùng cho trang chủ (Index) */
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 1s ease-out; }
+
+/* Popcorn: Dùng cho lồng cầu quay số (Host) */
+/* Bóng sẽ di chuyển ngẫu nhiên dựa trên biến --x, --y được gán từ JS */
+@keyframes popcorn {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(calc(var(--x1) * 1px), calc(var(--y1) * 1px)); }
+    50% { transform: translate(calc(var(--x2) * 1px), calc(var(--y2) * 1px)); }
+    75% { transform: translate(calc(var(--x3) * 1px), calc(var(--y3) * 1px)); }
+    100% { transform: translate(0, 0); }
+}
+.animate-popcorn {
+    animation: popcorn 0.5s infinite linear;
 }
 
-.is-verified-winner {
-    animation: gold-glow 0.8s infinite alternate;
-    border: 4px solid var(--vang-gold) !important;
+/* Missed Flash: Nhấp nháy khi người chơi dò sót số */
+@keyframes missed-flash {
+    0%, 100% { background-color: rgba(250, 204, 21, 0.3); }
+    50% { background-color: rgba(250, 204, 21, 0.7); }
+}
+.missed-pulse {
+    animation: missed-flash 1.5s infinite;
 }
 
-/* --- HIỆU ỨNG CHO CÁC Ô SỐ --- */
+/* Ball Pop: Hiệu ứng số nảy ra khi vừa xổ */
+.ball-pop {
+    animation: ball-appear 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes ball-appear {
+    0% { transform: scale(0); opacity: 0; }
+    80% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+/* --- 3. GIAO DIỆN LỒNG CẦU (HOST) --- */
+
 .number-cell {
     background: #450a0a;
     border: 2px solid var(--vang-dam);
@@ -41,214 +92,111 @@ body {
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    border-radius: 0.75rem;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
 }
 
 .number-cell.active {
     background: linear-gradient(135deg, var(--vang-gold), #fbbf24, var(--vang-dam));
     color: #450a0a;
     border-color: #ffffff;
-    box-shadow: 0 0 20px rgba(250, 204, 21, 0.8);
-    transform: scale(1.15) rotate(2deg);
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.8);
+    transform: scale(1.1) rotate(2deg);
     z-index: 10;
 }
 
-/* --- HIỆU ỨNG LỒNG CẦU & BÓNG --- */
-/* Lồng cầu đứng yên, không xoay container nữa */
-#cage-container {
-    background: radial-gradient(circle at 30% 30%, #450a0a, #000);
-    border: 6px solid #facc15;
+/* Quả bóng trong lồng cầu */
+.cage-ball {
+    position: absolute;
+    width: 1rem;  /* w-4 */
+    height: 1rem; /* h-4 */
+    border-radius: 9999px;
+    border: 1px solid rgba(0,0,0,0.2);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    /* Màu nền sẽ được JS gán dynamic */
 }
 
-/* Hiệu ứng bóng nhảy độc lập (Popcorn) */
-@keyframes ball-chaos {
-    0% { transform: translate(0, 0) scale(1); }
-    20% { transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px)) scale(1.1); }
-    40% { transform: translate(calc(var(--x2) * 1px), calc(var(--y2) * 1px)) scale(0.9); }
-    60% { transform: translate(calc(var(--x3) * 1px), calc(var(--y3) * 1px)) scale(1.1); }
-    80% { transform: translate(calc(var(--x4) * 1px), calc(var(--y4) * 1px)) scale(0.9); }
-    100% { transform: translate(0, 0) scale(1); }
+/* --- 4. GIAO DIỆN VÉ & GRID (PLAYER) --- */
+
+/* Container chứa vé: Dùng chung cho Sảnh chọn và Bàn chơi */
+#sheet-container, #my-game-tickets {
+    /* Quan trọng: Cho phép cuộn dọc */
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    
+    display: grid;
+    /* Mặc định PC: 3 cột */
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 20px;
+    padding: 20px;
+    align-items: start; /* Giúp vé không bị kéo giãn chiều cao */
 }
 
-.animate-popcorn {
-    animation: ball-chaos 0.4s infinite linear !important;
-}
-
-/* Thu nhỏ ô số cho Host */
-#loto-board .number-cell {
-    font-size: 0.85rem;
-    border-width: 1px;
-    border-radius: 0.4rem;
-}
-
-/* Responsive tinh chỉnh */
-@media (max-height: 800px) {
-    #loto-board .number-cell { font-size: 0.75rem; }
-    .font-sigmar { font-size: 0.9em; }
-}
-@keyframes pop-out {
-    0% { transform: scale(0); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* --- HIỆU ỨNG NHẮC SỐ (DÒ SÓT) --- */
-.missed-pulse {
-    animation: missed 1.5s infinite;
-    border: 2px solid var(--vang-gold) !important;
-}
-@keyframes missed {
-    0%, 100% { background-color: rgba(250, 204, 21, 0.2); transform: scale(1); }
-    50% { background-color: rgba(250, 204, 21, 0.6); transform: scale(1.05); }
-}
-
-/* --- TÙY CHỈNH NÚT BẤM --- */
-button {
-    transition: all 0.2s ease;
+/* Ô số trên vé */
+.loto-cell {
+    aspect-ratio: 1 / 1; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 2.5px solid #000000;
+    position: relative;
+    background-color: #fdfdfd;
     cursor: pointer;
 }
-button:active { transform: scale(0.95); }
-button:disabled { cursor: not-allowed; filter: grayscale(1); }
+.loto-cell:last-child { border-right: none; }
 
-/* --- THANH CUỘN TẾT --- */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--do-do); }
-::-webkit-scrollbar-thumb {
-    background: var(--vang-dam);
-    border-radius: 10px;
-    border: 2px solid var(--do-do);
-}
-::-webkit-scrollbar-thumb:hover { background: var(--vang-gold); }
-
-/* --- TIỆN ÍCH --- */
-/* Thu nhỏ ô số riêng cho bảng của Host để fit màn hình */
-#loto-board .number-cell {
-    font-size: 1rem; /* Giảm cỡ chữ số */
-    border-width: 1px; /* Viền mỏng hơn cho ô nhỏ */
-    border-radius: 0.5rem;
-}
-
-/* Làm đẹp màn hình chọn vé */
-#screen-selection h2 {
-    color: var(--vang-gold);
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
-
-/* Biến mỗi vé mini thành một bao lì xì nhỏ */
-.mini-ticket-box {
-    background: #fdfdfd;
-    border: 3px solid #450a0a; /* Viền đỏ đậm bao quanh */
-    border-radius: 1rem;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    width: 100%; /* Đảm bảo vé lấp đầy cột của Grid */
-    max-width: 360px; /* Khống chế chiều ngang tối đa */
-    margin: 0 auto; /* Căn giữa trong cột */
-    position: relative;
-    overflow: hidden;
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.2); /* Đổ bóng kiểu retro */
-    /* ĐẢM BẢO CHIỀU CAO TỰ NHIÊN */
-    height: auto; 
+/* Vòng tròn chứa số bên trong ô */
+.cell-num-box {
+    width: 85%;
+    height: 85%;
+    border-radius: 50%;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 24px;
+    transition: all 0.2s;
 }
 
-/* Loại bỏ các padding thừa ở container chứa bảng */
-.mini-ticket-box > div:last-child {
-    padding: 10px; /* Thu nhỏ khoảng cách giữa viền vé và bảng số */
-    background-color: #f8fafc; /* Một chút màu nền nhạt cho vùng chứa bảng */
-}
-
-/* Hiệu ứng khi di chuột qua vé */
-.mini-ticket-box:hover {
-    transform: translateY(-5px);
-    border-color: var(--vang-gold);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-}
-
-/* Hiệu ứng khi vé được chọn trong danh sách */
+/* Vé được chọn ở sảnh (có viền vàng) */
 .mini-ticket-box.selected {
-    border-color: var(--vang-gold);
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--vang-gold);
-    z-index: 10;
-}
-/* Chữ trong vé mini */
-.mini-ticket-box .cell-num {
-    color: #450a0a;
-    font-weight: 800;
+    border: 3px solid #facc15 !important;
+    box-shadow: 0 0 15px #facc15;
+    transform: scale(1.02);
 }
 
-/* Đè màu chữ khi vé được chọn */
-.mini-ticket-box.selected .cell-num {
-    color: #5c0000;
+/* --- 5. RESPONSIVE DESIGN (QUAN TRỌNG) --- */
+
+/* Tablet & iPad (Dưới 1024px) */
+@media (max-width: 1024px) {
+    #sheet-container, #my-game-tickets {
+        grid-template-columns: repeat(2, 1fr); /* Chuyển thành 2 cột */
+        gap: 10px;
+        padding: 10px;
+    }
+    .cell-num-box { font-size: 14px; }
 }
 
-/* Đảm bảo các hàng cuối cùng không bị mất viền hoặc thừa viền */
-#my-game-tickets .grid-cols-9:last-child {
-    border-bottom: none;
-}
+/* Mobile (Dưới 768px) */
+@media (max-width: 768px) {
+    /* Vẫn giữ 2 cột nhưng thu hẹp khoảng cách */
+    #sheet-container, #my-game-tickets {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+        padding: 6px !important;
+    }
+    
+    /* Thu nhỏ chữ để vừa ô */
+    .cell-num-box {
+        font-size: 11px !important; 
+    }
+    
+    /* Thu nhỏ header của vé */
+    .ticket-header-text {
+        font-size: 9px !important;
+        padding: 2px 4px !important;
+    }
 
-#my-game-tickets .grid-cols-9 .flex:last-child {
-    border-right: none;
-}
-
-/* Thu nhỏ Modal thông báo cho máy khách để không che hết vé */
-#announcement-modal .bg-white {
-    max-width: 300px;
-    padding: 1.5rem;
-}
-
-/* Điều chỉnh lại nút KINH cho nhỏ gọn hơn trên màn hình chia cột */
-#screen-game button[onclick="callKinh()"] {
-    max-width: 300px;
-    font-size: 1.5rem;
-    padding: 1rem;
-}
-
-/* Đảm bảo chữ trong ô nhập liệu luôn rõ nét */
-input#input-name, 
-input#input-room {
-    color: #0f172a !important; /* Màu xanh đen Slate-900 */
-    font-family: sans-serif; /* Font hệ thống cho dễ đọc */
-}
-
-/* Đổi màu chữ khi người dùng đang gõ */
-input:focus {
-    background-color: #ffffff !important;
-    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
-}
-
-/* Đổi màu chữ placeholder (chữ gợi ý) */
-::placeholder {
-    color: #94a3b8 !important; /* Màu xám nhạt */
-    font-weight: normal;
-}
-
-/* Tăng độ đậm cho số trên vé để nổi bật trên nền màu */
-.text-slate-900 {
-    color: #000000 !important;
-    text-shadow: 0.5px 0.5px 0px rgba(255,255,255,0.5);
-}
-
-
-/* Sửa đường kẻ ô số cho nét */
-.mini-ticket-box .grid-cols-9 > div {
-    box-sizing: border-box;
-}
-
-/* Đảm bảo bảng số luôn cân đối khi cuộn */
-#loto-board {
-    display: grid;
-    grid-template-columns: repeat(10, minmax(0, 1fr));
-    gap: 4px;
-    padding-bottom: 20px; /* Tạo khoảng trống phía dưới để không bị sát viền */
-}
-
-/* Ẩn thanh cuộn xấu xí nhưng vẫn cho phép cuộn */
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-.no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    /* Điều chỉnh viền vé mỏng hơn */
+    .loto-ticket { border-width: 2px; }
 }
