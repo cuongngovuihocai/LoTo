@@ -188,7 +188,7 @@ button:active { transform: scale(0.95); }
     
     /* Thu nhỏ chữ để vừa ô */
     .cell-num-box {
-        font-size: 11px !important; 
+        font-size: 10px !important; 
     }
     
     /* Thu nhỏ header của vé */
@@ -197,6 +197,26 @@ button:active { transform: scale(0.95); }
         padding: 2px 4px !important;
     }
 
-    /* Điều chỉnh viền vé mỏng hơn */
-    .loto-ticket { border-width: 2px; }
+    /* ===================================================
+       THÊM MỚI: GIẢM VIỀN VÉ CHO MÀN HÌNH ĐIỆN THOẠI 
+       =================================================== */
+       
+    /* 1. Màn hình SẢNH CHỌN VÉ: Giảm viền ngoài của vé xuống còn 1px */
+    .mini-ticket-box {
+        border-width: 1px !important;
+    }
+
+    /* 2. Màn hình TRONG TRẬN (Dò vé): Giảm viền trắng cực dày (6px) xuống còn 2px */
+    #my-game-tickets > div {
+        border-width: 2px !important; 
+        border-radius: 8px !important; /* Bo góc nhỏ lại cho hài hòa với viền mỏng */
+    }
+    
+    /* Làm mỏng viền đen bên trong các ô số cho đỡ rối mắt trên mobile */
+    .loto-cell {
+        border-right-width: 1px !important;
+    }
+    
+    /* Bỏ class cũ không còn tác dụng */
+    /* .loto-ticket { border-width: 2px; } */
 }
