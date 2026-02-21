@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lô Tô Tết Đại Cát - Chào Xuân</title>
+    <title>Lô Tô Đại Cát - Ham Chơi Education</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Nhúng file style.css chung -->
+    <!-- Link CSS chính -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="flex items-center justify-center min-h-screen p-6">
 
+    <!-- Sử dụng class .animate-fade-in từ style.css -->
     <div class="max-w-md w-full text-center space-y-8 animate-fade-in">
+        
         <!-- Logo/Header -->
         <div class="space-y-2">
             <div class="text-8xl animate-bounce">🧧</div>
@@ -45,24 +47,13 @@
             </div>
         </div>
 
-	<!-- Footer với Logo hình ảnh -->
-    	<!-- Dòng chữ phiên bản đã được tăng size và đổi màu -->
-    		<div class="text-yellow-500/90 font-bold text-sm uppercase tracking-[0.2em] font-goldman">
-	        Xuân Bính Ngọ 2026
-   		</div>
-		<div class="flex flex-col items-center gap-3 mt-12 pb-8">
-		    <!-- Chèn ảnh Logo vào đây -->
-		    <img src="assets/logo.png" alt="Logo" class="h-14 md:h-24 w-auto drop-shadow-lg transition-transform">
-    
-	</div>
-
-    <style>
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in { animation: fade-in 1s ease-out; }
-    </style>
+        <!-- Footer -->
+        <div class="text-yellow-500/90 font-bold text-sm uppercase tracking-[0.2em] font-goldman">
+            Xuân Bính Ngọ 2026
+        </div>
+        <div class="flex flex-col items-center gap-3 mt-12 pb-8">
+            <img src="assets/logo.png" alt="Logo" class="h-14 md:h-24 w-auto drop-shadow-lg transition-transform">
+        </div>
+    </div>
 </body>
-
 </html>

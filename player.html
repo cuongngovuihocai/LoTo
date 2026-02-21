@@ -7,93 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Link CSS chính: Chứa toàn bộ logic layout grid cho vé -->
     <link rel="stylesheet" href="css/style.css">
-
-<style>
-    html, body {
-        height: 100%;
-        margin: 0;
-        background-color: #5c0000;
-        overflow: hidden; 
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* VÙNG CHỨA VÉ (Dùng chung cho cả Sảnh chọn và Bàn chơi) */
-    #sheet-container, #my-game-tickets {
-        flex: 1;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
-        display: grid;
-        /* Mặc định cho màn hình lớn (PC): 3 cột để vé không bị quá to */
-        grid-template-columns: repeat(3, 1fr); 
-        gap: 15px;
-        padding: 15px;
-        align-items: start; /* QUAN TRỌNG: Giúp vé không bị kéo giãn chiều cao */
-    }
-
-    /* Cấu trúc ô số vuông hoàn hảo */
-    .loto-cell {
-        aspect-ratio: 1 / 1; 
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-right: 1px solid rgba(0,0,0,0.15);
-        position: relative;
-        background-color: #ffffff;
-    }
-
-    /* Vòng tròn số */
-    .cell-num-box {
-        width: 85%;
-        height: 85%;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 900;
-        font-size: 14px;
-        transition: all 0.2s;
-    }
-
-    /* TABLET: 2 cột (iPad, máy tính bảng) */
-    @media (max-width: 1024px) {
-        #sheet-container, #my-game-tickets {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            padding: 10px;
-        }
-        .cell-num-box { font-size: 14px; }
-    }
-
-    /* Thu nhỏ tối đa cho Mobile */
-    @media (max-width: 768px) {
-        #sheet-container, #my-game-tickets {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 6px !important;
-            padding: 6px !important;
-        }
-        .cell-num-box {
-            font-size: 11px !important; /* Chữ nhỏ cho mobile */
-        }
-        /* Thu nhỏ tiêu đề vé */
-        .ticket-header-text {
-            font-size: 9px !important;
-            padding: 2px 4px !important;
-        }
-    }
-
-    /* Hiệu ứng vé được chọn ở Sảnh */
-    .mini-ticket-box.selected {
-        border: 3px solid #facc15 !important;
-        box-shadow: 0 0 15px #facc15;
-        transform: scale(1.02);
-    }
-
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-</style>
-
 </head>
 <body class="font-sans antialiased text-amber-100">
 
@@ -118,16 +33,15 @@
     </div>
     <div class="mt-8 flex flex-col items-center gap-2">             
         <div class="text-yellow-400 font-bold text-sm uppercase tracking-widest font-goldman">Xuân Bính Ngọ 2026</div>
-	<img src="assets/logo.png" alt="Logo" class="h-14 md:h-24 w-auto drop-shadow-lg mt-2">
+        <img src="assets/logo.png" alt="Logo" class="h-14 md:h-24 w-auto drop-shadow-lg mt-2">
     </div>
 </div>
 
 <!-- 2. MÀN HÌNH CHỌN VÉ -->
 <div id="screen-selection" class="hidden h-full flex flex-col overflow-hidden relative">
     
-    <!-- LỚP PHỦ CHỜ NHÀ CÁI (Che toàn bộ để khóa nút bấm) -->
+    <!-- LỚP PHỦ CHỜ NHÀ CÁI -->
     <div id="selection-waiting-overlay" class="absolute inset-0 z-50 bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center text-center p-6">
-        <!-- Hiệu ứng lì xì nhảy múa -->
         <div class="text-8xl mb-6 animate-bounce">🧧</div>
         <h3 class="text-3xl font-sigmar text-yellow-400 drop-shadow-lg">XIN CHỜ GIÂY LÁT</h3>
         <div class="w-16 h-1 bg-yellow-500 my-4 rounded-full"></div>
@@ -139,7 +53,7 @@
         </p>
     </div>
 
-    <!-- Header chọn vé (Nằm dưới lớp phủ nên sẽ bị khóa) -->
+    <!-- Header chọn vé -->
     <div class="shrink-0 bg-red-800 border-b-4 border-yellow-500 p-6 shadow-2xl flex flex-col items-center gap-4">
         <h2 class="text-2xl font-sigmar text-yellow-400 uppercase">Chọn vé may mắn</h2>
         <div class="flex gap-4">
@@ -149,100 +63,93 @@
         <p class="text-[12px] font-bold text-yellow-200 uppercase tracking-widest">Hạn mức: <span id="max-ticket-display" class="text-white text-lg mx-1">0</span> vé</p>
     </div>
 
-    <!-- Vùng chứa vé -->
-    <div id="sheet-container" class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start no-scrollbar">
+    <!-- Vùng chứa vé: Class grid layout đã được chuyển vào CSS #sheet-container -->
+    <div id="sheet-container" class="flex-1 overflow-y-auto p-6 no-scrollbar">
         <!-- JS Render -->
     </div>
 
     <!-- Logo Footer -->
     <div class="shrink-0 p-4 flex flex-col items-center bg-black/20">
-	<img src="assets/logo.png" alt="Logo" class="h-10 md:h-20 w-auto drop-shadow-lg">
+        <img src="assets/logo.png" alt="Logo" class="h-10 md:h-20 w-auto drop-shadow-lg">
     </div>
 </div>
 
-    <!-- 3. MÀN HÌNH CHƠI GAME (ĐÃ ÉP KHUNG 1 MÀN HÌNH) -->
-    <div id="screen-game" class="hidden h-full flex flex-col overflow-hidden">
-        
-        <!-- Header Game: Logo to & Số nhỏ -->
-        <header class="shrink-0 bg-red-800 border-b-4 border-yellow-500 p-3 shadow-2xl">
-            <div class="max-w-6xl mx-auto flex items-center justify-between px-2">
-                <!-- Logo to bên trái -->
-                <div class="flex-1">
-                    <img src="assets/logo.png" alt="Logo" class="h-12 md:h-20 w-auto drop-shadow-lg">
-                </div>
-
-                <!-- Số hiện tại thu nhỏ bên phải -->
-                <div class="flex flex-col items-center bg-red-900/60 py-1 px-4 rounded-xl border-2 border-yellow-600 shadow-inner">
-                    <span class="text-[12px] font-black text-yellow-500 uppercase tracking-tighter">Số hiện tại</span>
-                    <div id="display-current-num" class="text-4xl md:text-5xl font-sigmar text-white leading-none">--</div>
-                </div>
+<!-- 3. MÀN HÌNH CHƠI GAME -->
+<div id="screen-game" class="hidden h-full flex flex-col overflow-hidden">
+    
+    <!-- Header Game -->
+    <header class="shrink-0 bg-red-800 border-b-4 border-yellow-500 p-3 shadow-2xl">
+        <div class="max-w-6xl mx-auto flex items-center justify-between px-2">
+            <div class="flex-1">
+                <img src="assets/logo.png" alt="Logo" class="h-12 md:h-20 w-auto drop-shadow-lg">
             </div>
-        </header>
-        <!-- Cụm nút điều chỉnh âm thanh và chế độ dò -->
-<div class="shrink-0 px-4 py-2 bg-red-950/30 border-b border-yellow-900/20 backdrop-blur-sm">
-    <div class="max-w-6xl mx-auto flex flex-wrap justify-end items-center gap-x-4 gap-y-1">
-        <!-- 1. Nhạc nền -->
-        <div class="flex items-center gap-1">
-            <span class="text-[9px] font-black text-yellow-600 uppercase">Nhạc Tết</span>
-            <label class="relative inline-flex items-center cursor-pointer scale-75">
-                <input type="checkbox" id="music-toggle" class="sr-only peer" onchange="toggleMusic()">
-                <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
-            </label>
+            <div class="flex flex-col items-center bg-red-900/60 py-1 px-4 rounded-xl border-2 border-yellow-600 shadow-inner">
+                <span class="text-[12px] font-black text-yellow-500 uppercase tracking-tighter">Số hiện tại</span>
+                <!-- ball-pop class đã được định nghĩa trong CSS -->
+                <div id="display-current-num" class="text-4xl md:text-5xl font-sigmar text-white leading-none">--</div>
+            </div>
         </div>
-        <!-- 2. Giọng đọc -->
-        <div class="flex items-center gap-1">
-            <span class="text-[9px] font-black text-yellow-600 uppercase">Giọng đọc</span>
-            <label class="relative inline-flex items-center cursor-pointer scale-75">
-                <input type="checkbox" id="voice-toggle" checked class="sr-only peer">
-                <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-yellow-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
-            </label>
+    </header>
+
+    <!-- Controls -->
+    <div class="shrink-0 px-4 py-2 bg-red-950/30 border-b border-yellow-900/20 backdrop-blur-sm">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-end items-center gap-x-4 gap-y-1">
+            <div class="flex items-center gap-1">
+                <span class="text-[9px] font-black text-yellow-600 uppercase">Nhạc Tết</span>
+                <label class="relative inline-flex items-center cursor-pointer scale-75">
+                    <input type="checkbox" id="music-toggle" class="sr-only peer" onchange="toggleMusic()">
+                    <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                </label>
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="text-[9px] font-black text-yellow-600 uppercase">Giọng đọc</span>
+                <label class="relative inline-flex items-center cursor-pointer scale-75">
+                    <input type="checkbox" id="voice-toggle" checked class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-yellow-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                </label>
+            </div>
+            <div class="flex items-center gap-1">
+                <span id="mode-label" class="text-[9px] font-black text-yellow-500 uppercase">Dò Tự Động</span>
+                <label class="relative inline-flex items-center cursor-pointer scale-75">
+                    <input type="checkbox" id="auto-toggle" class="sr-only peer" onchange="toggleAutoMode()">
+                    <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-green-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                </label>
+            </div>
         </div>
-        <!-- 3. Chế độ Dò -->
-        <div class="flex items-center gap-1">
-            <span id="mode-label" class="text-[9px] font-black text-yellow-500 uppercase">Dò Tự Động</span>
-            <label class="relative inline-flex items-center cursor-pointer scale-75">
-                <input type="checkbox" id="auto-toggle" class="sr-only peer" onchange="toggleAutoMode()">
-                <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-green-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
-            </label>
-        </div>
+    </div>
+
+    <!-- VÙNG VÉ DÒ: Class grid layout đã được chuyển vào CSS #my-game-tickets -->
+    <main id="my-game-tickets" class="flex-1 overflow-y-scroll px-4 py-1 no-scrollbar min-h-0">
+        <!-- Render bởi JS -->
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="shrink-0 p-2 md:p-4 bg-gradient-to-t from-red-950 to-transparent flex justify-center">
+        <button onclick="callKinh()" 
+            class="w-full max-w-md bg-gradient-to-r from-red-600 to-red-800 text-white font-sigmar text-xl md:text-3xl py-2 md:py-4 rounded-xl shadow-xl border-2 md:border-4 border-yellow-400 active:scale-95 transition-all uppercase tracking-widest">
+            KINH !!!
+        </button>
+    </footer>
+</div>
+
+<!-- CÁC THÀNH PHẦN NỔI -->
+<div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden bg-yellow-500 text-red-950 px-6 py-3 rounded-full font-black shadow-2xl border-2 border-yellow-200 animate-bounce"></div>
+
+<div id="announcement-modal" class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center hidden p-6 backdrop-blur-md">
+    <div class="bg-white border-4 border-red-600 p-8 rounded-[2rem] text-center max-w-sm w-full shadow-2xl">
+        <div id="announce-icon" class="text-6xl mb-4 animate-bounce">🔔</div>
+        <h2 id="announce-title" class="text-2xl font-sigmar text-red-600 mb-2 italic uppercase">ĐANG HÔ KINH!</h2>
+        <p id="announce-msg" class="text-slate-700 font-bold mb-6">Đang kiểm tra số...</p>
+        <button id="btn-close-announce" onclick="closeAnnounce()" class="hidden w-full bg-red-600 text-white font-bold py-3 rounded-xl uppercase">Đóng</button>
     </div>
 </div>
 
-        <!-- VÙNG VÉ DÒ: TỰ CO GIÃN VÀ CUỘN BÊN TRONG -->
-<!-- Thay đổi class lg:grid-cols-2 thành md:grid-cols-2 -->
-<!-- md là dành cho máy tính bảng (768px trở lên) -->
-<main id="my-game-tickets" class="flex-1 overflow-y-scroll px-4 py-1 grid grid-cols-1 md:grid-cols-2 gap-4 no-scrollbar min-h-0">
-    <!-- Render bởi JS -->
-</main>
-        <!-- FOOTER: NÚT KINH CỐ ĐỊNH, KHÔNG ĐÈ VÉ -->
-	<footer class="shrink-0 p-2 md:p-4 bg-gradient-to-t from-red-950 to-transparent flex justify-center">
-	    <button onclick="callKinh()" 
-	        class="w-full max-w-md bg-gradient-to-r from-red-600 to-red-800 text-white font-sigmar text-xl md:text-3xl py-2 md:py-4 rounded-xl shadow-xl border-2 md:border-4 border-yellow-400 active:scale-95 transition-all uppercase tracking-widest">
-	        KINH !!!
-	    </button>
-	</footer>
-    </div>
-
-    <!-- CÁC THÀNH PHẦN NỔI (MODALS & TOAST) -->
-    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden bg-yellow-500 text-red-950 px-6 py-3 rounded-full font-black shadow-2xl border-2 border-yellow-200 animate-bounce"></div>
-
-    <div id="announcement-modal" class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center hidden p-6 backdrop-blur-md">
-        <div class="bg-white border-4 border-red-600 p-8 rounded-[2rem] text-center max-w-sm w-full shadow-2xl">
-            <div id="announce-icon" class="text-6xl mb-4 animate-bounce">🔔</div>
-            <h2 id="announce-title" class="text-2xl font-sigmar text-red-600 mb-2 italic uppercase">ĐANG HÔ KINH!</h2>
-            <p id="announce-msg" class="text-slate-700 font-bold mb-6">Đang kiểm tra số...</p>
-            <button id="btn-close-announce" onclick="closeAnnounce()" class="hidden w-full bg-red-600 text-white font-bold py-3 rounded-xl uppercase">Đóng</button>
-        </div>
-    </div>
-
-<!-- Nhạc nền Xuân (Link ví dụ nhạc không bản quyền) -->
 <audio id="bg-music" loop>
     <source src="assets/nhacxuan.mp3" type="audio/mpeg">
 </audio>
 
-    <!-- Scripts -->
-    <script src="js/firebase-config.js"></script>
-    <script src="js/loto-logic.js"></script>
-    <script src="js/player.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/loto-logic.js?v=tet2026"></script>
+<script src="js/player.js?v=tet2026"></script>
 </body>
 </html>
