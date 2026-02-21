@@ -13,6 +13,8 @@ let startConfirmState = false;
 let deleteConfirmState = false;
 let resetConfirmState = false;
 
+let varTimeout = null; 
+
 // Đợi trang web tải xong mới chạy
 document.addEventListener('DOMContentLoaded', () => {
     initRoom();
@@ -247,18 +249,21 @@ function initCageBalls() {
     
     for (let i = 0; i < 40; i++) {
         const ball = document.createElement('div');
-        ball.className = `absolute w-4 h-4 rounded-full border border-black/20 shadow-lg`;
-// Tạo hiệu ứng bóng đổ bên trong để quả cầu nhìn 3D hơn
+        
+        // SỬ DỤNG CLASS TỪ CSS, KHÔNG VIẾT INLINE DÀI DÒNG
+        ball.className = "cage-ball"; 
+        
+        // Các thuộc tính ngẫu nhiên (Vị trí & Màu sắc) vẫn phải giữ ở JS
         const color = colors[i % colors.length];
         ball.style.background = `radial-gradient(circle at 30% 30%, ${color}, #000)`;
         
         ball.style.top = `${Math.random() * 65 + 18}%`;
         ball.style.left = `${Math.random() * 75 + 18}%`;
         
-        // Gán các biến quỹ đạo ngẫu nhiên
-        for(let j=1; j<=4; j++) {
-            ball.style.setProperty(`--x${j===1?'':j}`, Math.random() * 80 - 40);
-            ball.style.setProperty(`--y${j===1?'':j}`, Math.random() * 80 - 40);
+        // Gán các biến CSS Variable cho Animation Popcorn
+        for(let j=1; j<=3; j++) {
+            ball.style.setProperty(`--x${j}`, Math.random() * 80 - 40);
+            ball.style.setProperty(`--y${j}`, Math.random() * 80 - 40);
         }
         cage.appendChild(ball);
     }
@@ -386,6 +391,13 @@ window.speechSynthesis.onvoiceschanged = () => {
 function handleWinnerFound(winner) {
     if (!winner) return;
 
+    // QUAN TRỌNG: Hủy bộ đếm 5 giây của lệnh phạt cũ nếu có VAR mới đến
+    // Tránh tình trạng bộ đếm cũ xóa nhầm Database của người báo Kinh đúng
+    if (varTimeout) {
+        clearTimeout(varTimeout);
+        varTimeout = null;
+    }
+
     // 1. Tạm dừng quay số để làm việc
     isGameRunning = false;
     document.getElementById('btn-draw').disabled = true;
@@ -408,25 +420,35 @@ function handleWinnerFound(winner) {
         renderWinnerModal(winnerNameEl, winner, "KINH SAI!", 
             `Người chơi ${winner.name} báo hàng số có số chưa xổ! Ván chơi vẫn tiếp tục...`, "text-red-500");
     } else {
-        // 4. KIỂM TRA KINH TRỄ DỰA TRÊN HÀNG TỐT NHẤT
-        // lastNumIndex là vị trí của con số "hoàn tất" hàng trúng trong lịch sử
-        const lastNumIndex = winner.lastNumIndex; 
+
+	// ==========================================
+        // 🛠 BẢN VÁ LỖI CHO ĐIỆN THOẠI: HOST TỰ TÍNH TOÁN
+        // Bất chấp điện thoại không gửi lastNumIndex, Host sẽ tự dò!
+        // ==========================================
+        let calculatedLastIndex = -1;
+        winningRow.forEach(num => {
+            const idx = serverHistory.indexOf(Number(num));
+            if (idx > calculatedLastIndex) {
+                calculatedLastIndex = idx; // Lấy vị trí xa nhất của hàng số trúng
+            }
+        });
+
         const currentServerIndex = serverHistory.length - 1;
 
-        // Nếu số hoàn tất là số vừa ra (hoặc trễ tối đa 1 số)
-        if (lastNumIndex >= currentServerIndex - 1) {
+        // Kiểm tra trễ (Dung sai 1 số)
+        if (calculatedLastIndex >= currentServerIndex - 1) { // thay số 1 thành số khác để điều chỉnh dung sai
             renderWinnerModal(winnerNameEl, winner, "THẮNG CUỘC!", 
-                `${winner.name} đã Kinh hợp lệ!<br>Bộ số: ${winningRow.join(' - ')}. Xin chúc mừng.`, 
+                `Thánh ${winner.name} đã Kinh hợp lệ!<br>Bộ số may mắn: ${winningRow.join(' - ')}. Xin chúc mừng.`, 
                 "text-green-500");
             
             document.querySelector('#winner-modal button').innerText = "XÁC NHẬN KẾT THÚC";
         } else {
-            // Trường hợp người chơi cố tình chọn hàng đã trúng từ lâu
-            const missedNum = serverHistory[lastNumIndex];
-            const lateCount = currentServerIndex - lastNumIndex;
+            // Hiển thị chính xác số đã làm lỡ dở
+            const missedNum = serverHistory[calculatedLastIndex];
+            const lateCount = currentServerIndex - calculatedLastIndex;
             
             renderWinnerModal(winnerNameEl, winner, "KINH TRỄ!", 
-                `${winner.name} đã đủ từ số [${missedNum}], nhưng đã để trễ ${lateCount} số mới báo. Ván chơi vẫn tiếp tục...`, 
+                `Thánh ${winner.name} đã đủ từ số [${missedNum}], nhưng đã báo trễ ${lateCount} lượt. VAR từ chối...`, 
                 "text-orange-500");
             
             document.querySelector('#winner-modal button').innerText = "BỎ QUA & CHƠI TIẾP";
@@ -453,6 +475,12 @@ function verifyWinner(isValid) {
     // Lấy thêm đoạn miêu tả chi tiết đang hiện trên màn hình Host
     const modalDesc = document.querySelector('#winner-name .text-sm').innerText;
 
+    // Dọn dẹp Timeout cũ để an toàn
+    if (varTimeout) {
+        clearTimeout(varTimeout);
+        varTimeout = null;
+    }
+
     if (isValid && modalTitle === "THẮNG CUỘC!") {
         // CHỐT THẮNG THẬT
         db.ref(`rooms/${roomId}/winner`).update({ isVerified: true });
@@ -470,8 +498,8 @@ function verifyWinner(isValid) {
             // Hiển thị thông báo trên máy Host để biết đang trong thời gian chờ
             showToast(`⚠️ ${modalTitle} - Đang hiển thị VAR cho toàn phòng (5s)...`);
 
-            // Tăng thời gian chờ lên 5000ms (5 giây) để mọi người kịp đọc tin nhắn VAR
-            setTimeout(() => {
+            // Gán Timeout vào biến toàn cục để quản lý
+            varTimeout = setTimeout(() => {
                 // Xoá node winner để dọn dẹp màn hình tất cả người chơi
                 db.ref(`rooms/${roomId}/winner`).remove();
                 
@@ -480,7 +508,8 @@ function verifyWinner(isValid) {
                 document.getElementById('btn-draw').disabled = false;
                 
                 showToast("🏁 TRẬN ĐẤU TIẾP TỤC! MỜI CÁC THÁNH DÒ TIẾP...");
-            }, 5000); 
+                varTimeout = null;
+            }, 8000); //thông báo hiện trong 8 giây để người chơi đọc
         });
     }
     

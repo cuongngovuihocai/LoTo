@@ -372,6 +372,11 @@ function renderWinnerModalLogic(winnerData) {
         icon.innerText = "👑";
         title.innerText = "THẮNG CUỘC!";
         title.className = "text-3xl font-sigmar text-green-600 mb-2 animate-bounce";
+
+        // [MỚI] Đọc tên & hàng số an toàn tránh lỗi đứt mạng làm crash UI
+        const safeName = winnerData.name ? winnerData.name.toUpperCase() : "ẨN DANH";
+        const safeRow = winnerData.winningRow ? winnerData.winningRow.join(' - ') : "Đã xác nhận";
+
         msg.innerHTML = `<span class="text-xl text-red-600 font-bold">CHÚC MỪNG THÁNH ${winnerData.name.toUpperCase()}</span><br><span class="text-[12px] text-slate-500 font-bold">BỘ SỐ MAY MẮN: ${winnerData.winningRow.join(' - ')}</span>`;
         closeBtn.classList.remove('hidden'); 
     } else if (winnerData.isRejected === true) {
@@ -383,7 +388,7 @@ function renderWinnerModalLogic(winnerData) {
 	
 	// Hiển thị nội dung chi tiết mà Host gửi xuống
         msg.innerHTML = `
-            <div class="text-slate-800 font-bold mb-2">${winnerData.description}</div>
+            <div class="text-slate-800 font-bold mb-2">${winnerData.description || 'VAR không duyệt!'}</div>
             <div class="text-slate-500 uppercase text-[10px] italic">Ván chơi sẽ tiếp tục sau giây lát...</div>
         `;
     
@@ -391,7 +396,8 @@ function renderWinnerModalLogic(winnerData) {
         icon.innerText = "🔔";
         title.innerText = "CÓ NGƯỜI KINH!";
         title.className = "text-3xl font-sigmar text-red-600 mb-2 animate-pulse";
-        msg.innerText = `Đó là Thánh ${winnerData.name.toUpperCase()}. Chờ VAR...`;
+        const safeName = winnerData.name ? winnerData.name.toUpperCase() : "MỘT THÁNH";
+        msg.innerText = `Đó là ${safeName}. Chờ VAR...`;
         closeBtn.classList.add('hidden');
     }
 }
@@ -410,7 +416,7 @@ function renderMyGameTickets() {
     myTickets.forEach((ticket, tIdx) => {
         const ticketCard = document.createElement('div');
         // Thêm h-fit để vé chỉ cao bằng nội dung bên trong nó
-    ticketCard.className = "bg-white border border-red-900 shadow rounded-lg overflow-hidden flex flex-col h-fit";
+    ticketCard.className = "bg-white border-[6px] sm:border-8 border-white shadow-2xl rounded-2xl overflow-hidden flex flex-col h-fit transition-all";
         
         let rowsHtml = '';
         ticket.forEach((row) => {
@@ -501,6 +507,13 @@ function toggleAutoMode() {
  * Hàm hô KINH !!! Gửi lệnh lên Nhà cái
  */
 function callKinh() {
+    // [MỚI] Ngăn chặn spam nút Kinh khi bảng thông báo VAR đang hiện diện
+    // Tránh việc người chơi bị phạt nhưng vẫn bấm tiếp làm treo máy chủ
+    const modal = document.getElementById('announcement-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+        return showToast("Đang có VAR! Vui lòng chờ giây lát...");
+    }
+
     // Sử dụng hàm đối soát chuẩn từ loto-logic.js
     const result = checkWin(myTickets, serverNumbers);
 
@@ -512,12 +525,14 @@ function callKinh() {
             winningRow: result.winningRow, // Gửi hàng số trúng để Host đối chiếu
             ticketIndex: result.ticketIndex,
             rowIndex: result.rowIndex,
+            // THÊM DÒNG NÀY: Gửi vị trí số cuối cùng để Nhà cái đối soát
+            lastNumIndex: result.lastNumIndex, 
             isVerified: false, 
             timestamp: Date.now()
         });
-        showToast("🔥 BẠN ĐÃ KINH! ĐANG CHỜ GIÁM ĐỊNH... 🔥");
+        showToast("🔥 CÓ NGƯỜI HÔ KINH! ĐANG CHỜ XÁC NHẬN... 🔥");
     } else {
-        showToast("⚠️ Chưa đủ số đâu! Đừng kinh bậy nha.");
+        showToast("⚠️ Chưa đủ số đâu! Đừng kinh bậy nha Thánh.");
     }
 }
 
